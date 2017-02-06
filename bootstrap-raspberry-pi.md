@@ -1,7 +1,7 @@
 # How to Bootstrap a Headless Raspberry Pi with a Mac
 ## (no monitor, keyboard, or mouse needed)
 
-Last weekend I bought a raspberry pi. I wanted to setup it up, but I didn't have a keyboard, mouse, or monitor I could attach to it. I thought I could attach my pi to my Mac via ethernet, and ssh would “Just work”, but it didn’t. After a few hours of googling, I found a solution. This guide shows you how to ssh into a new Raspberry Pi from your mac in 3 steps.
+Last weekend I bought a Raspberry Pi. I wanted to setup it up, but I didn't have a keyboard, mouse, or monitor I could attach to it. I thought I could attach my pi to my Mac via ethernet, and ssh would “Just work”, but it didn’t. After a few hours of googling, I found a solution. This guide shows you how to ssh into a new Raspberry Pi from your mac in 3 steps.
 
 This guide assumes you have installed the latest version of Raspbian on your SD card and can connect your pi to your mac via ethernet. 
 
@@ -9,7 +9,7 @@ This guide assumes you have installed the latest version of Raspbian on your SD 
 
 By default Raspbian disables sshd. SSHD is the process that listens for incoming ssh connections and validates them. To enable sshd, first mount the sd card on your computer and navigate to the root directory in your terminal. On macOS find the right directory in /Volumes and cd into it. I used this command: `cd /Volumes/boot`
 
-Next, run this command: “touch ssh”. This creates an empty file named “ssh” in the root directory of your SD card. Each time Raspbian boots it will enable sshd if it sees the “ssh” file and deletes the file immediately afterwards. This means that until you enable sshd permanently, you will need to add this file each time you boot your Pi. At the end of this tutorial I will show you how to enable sshd permanently. 
+Next, run this command: `touch ssh`. This creates an empty file named “ssh” in the root directory of your SD card. Each time Raspbian boots it will enable sshd if it sees the “ssh” file and deletes the file immediately afterwards. This means that until you enable sshd permanently, you will need to add this file each time you boot your Pi. At the end of this tutorial I will show you how to enable sshd permanently. 
 
 ## 2. Assign your Pi an IP address. 
 
