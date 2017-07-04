@@ -343,5 +343,5 @@ Here are some directions you can take to extend what we have built here.
 
 Thanks for reading! I hope you learned something interesting in this article. Drawing with parametric graphs gives you a lot of power without much complexity. In fewer than 100 lines of code we were able to create some cool looking graphs.
 
-If you create something you like, please show me! Tweet your creation to me at @viveks3th.
+If you create something you like, please show me! Tweet your creation to me at [@viveks3th](https://twitter.com/viveks3th).
 
