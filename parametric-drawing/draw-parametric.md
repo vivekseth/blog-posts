@@ -10,7 +10,7 @@ You are probably familiar with graphs that look like this:
 
 ![](./images/parabola.png)
 
-The **traditional** approach to graphing functions involves mapping each x to 1 and only 1 y point. This approach has some drawbacks. For example, since there can only be 1 `y` point for each `x`, you cannot draw a circle this way without a "hack". To draw a circle you need two functions: one for the top half and another for the bottom half.
+The **traditional** approach to graphing functions involves mapping each `x` to one and only one `y` point. This approach has some drawbacks. For example, since there can only be 1 `y` point for each `x`, you cannot draw a circle this way without a "hack". To draw a circle you need two functions: one for the top half and another for the bottom half.
 
     y = sqrt(R^2 - x^2)
     y = -sqrt(R^2 - x^2)
@@ -112,6 +112,7 @@ drawParametric(ctx, function(t) {
 }, function(t) {
     return t
 }, [200, 400]);
+
 drawParametric(ctx, function(t) {
     return 600 - t
 }, function(t) {
