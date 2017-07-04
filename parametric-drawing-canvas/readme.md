@@ -1,4 +1,4 @@
-# Drawing Parametric Functions with the HTML Canvas
+# Drawing Parametric Graphs with the HTML Canvas
 
 ![](./images/advanced-5.png)
 
