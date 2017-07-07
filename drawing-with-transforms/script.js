@@ -74,7 +74,39 @@ function drawPolar(ctx, fth, tr, tarr) {
     drawParametric(ctx, fx, fy, tarr);
 }
 
-var animation = function(timestamp){
+function CreateAnimation(anim) {
+    var shouldContinueAnimation = false;
+    var previousTimestamp = 0;
+    function animationWrapper(currentTimestamp) {
+        if (previousTimestamp == 0) {
+            previousTimestamp = currentTimestamp;
+        }
+
+        var duration = currentTimestamp - previousTimestamp;
+
+        anim(currentTimestamp, duration);
+
+        if (shouldContinueAnimation){
+            requestAnimationFrame(animationWrapper);
+        }
+    }
+
+    function stopAnimation() {
+        shouldContinueAnimation = false;
+    }
+
+    function startAnimation() {
+        shouldContinueAnimation = true;
+        requestAnimationFrame(animationWrapper);
+    }
+
+    return {
+        'start' : startAnimation,
+        'stop' : stopAnimation,
+    };
+}
+
+var a = CreateAnimation(function(timestamp){
     var x = (10 * (0.5 * (Math.cos(0.0005 * timestamp) + 1.0)) + 150);
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -86,9 +118,13 @@ var animation = function(timestamp){
     }, function(t){
         return (0.5) * Math.sin(t / 0.7);
     }, range(0, 200, x));
+});
+a.start();
 
-    requestAnimationFrame(animation);
-}
+setTimeout(function(){
+    a.stop();
+}, 3000);
 
-requestAnimationFrame(animation);
+
+
 
