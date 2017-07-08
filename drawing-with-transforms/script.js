@@ -303,9 +303,9 @@ var anim = CreateAnimation(function(curr, duration) {
     var ROWS = 10;
 
     var osc = oscillation(animLow, animHigh, 10000)
-    var scaleMap = remap(animLow, animHigh, -0.4, 0.4);
-
+    
     // DEBUG
+    // var scaleMap = remap(animLow, animHigh, -0.4, 0.4);
     // osc = function(t) {
     //     return 60;
     // }
@@ -319,32 +319,33 @@ var anim = CreateAnimation(function(curr, duration) {
 
         // Apply rotation
         // ctx.save();
-        //     var trans = CGTransformRotate(rotMap(osc(curr)));
+        //     var trans = CGTransformRotate(0.001 * curr);
         //     applyTransform(ctx, trans);
 
 
-        for (var i =-ROWS; i<=ROWS; i++) {
-            ctx.save();
-                ctx.fillStyle = 'rgba(255,255,255,0.2)';
-                drawParametricDots(ctx, function(t){
-                    return t;
-                }, function(t){
-                    return 0.2 * Math.cos((2 * Math.PI * t * N) + (curr * 0.003) + 0.15 * i)
-                }, function(t){
-                    return (0.5 * 0.5 - (t * t)) * 0.1; 
-                }, range(-0.5, 0.5, osc(curr)))
-            ctx.restore();
-        }
+            for (var i =-ROWS; i<=ROWS; i++) {
+                ctx.save();
+                    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                    drawParametricDots(ctx, function(t){
+                        return t;
+                    }, function(t){
+                        return 0.2 * Math.cos((2 * Math.PI * t * N) + (curr * 0.003) + 0.15 * i)
+                    }, function(t){
+                        return (0.5 * 0.5 - (t * t)) * 0.1; 
+                    }, range(-0.5, 0.5, osc(curr)))
+                ctx.restore();
+            }
 
         // ctx.restore();
 
-        ctx.save();
-            var markerX = scaleMap(osc(curr))
-            var markerY = -0.4;
-            ctx.lineWidth=0.003;
-            ctx.strokeStyle = 'rgba(255,0,0,1.0)';
-            drawMarker(ctx, 0.02, markerX, markerY);
-        ctx.restore();
+        // DEBUG
+        // ctx.save();
+        //     var markerX = scaleMap(osc(curr))
+        //     var markerY = -0.4;
+        //     ctx.lineWidth=0.003;
+        //     ctx.strokeStyle = 'rgba(255,0,0,1.0)';
+        //     drawMarker(ctx, 0.02, markerX, markerY);
+        // ctx.restore();
 
     ctx.restore();
 
