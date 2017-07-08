@@ -19,6 +19,8 @@ canvas.style.backgroundColor = '#000';
 
 var ctx = canvas.getContext("2d");
 
+/// Draw Path
+
 function drawParametric(ctx, fx, fy, tarr) {
     ctx.beginPath();
     for (var i=0; i<tarr.length; i++) {
@@ -33,40 +35,6 @@ function drawParametric(ctx, fx, fy, tarr) {
     }
     ctx.stroke();
 }
-
-function drawLine(ctx, x1, y1, x2, y2) {
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();   
-}
-
-function drawParametric2(ctx, fx, fy, tarr) {
-    function center(coordinate, dimensionLength) {
-        return coordinate;
-    }
-
-    for (var i=0; i<(tarr.length - 1); i++) {
-        var x1 = center(fx(tarr[i]), WIDTH);
-        var y1 = center(fy(tarr[i]), HEIGHT);
-        var x2 = center(fx(tarr[i + 1]), WIDTH);
-        var y2 = center(fy(tarr[i + 1]), HEIGHT);
-        drawLine(ctx, x1, y1, x2, y2);
-    }
-}
-
-function range(low, high, N) {
-    var delta = (high - low);
-    var step = delta / N;
-    var arr = [];
-
-    for (var i=0; i<(N+1); i++) {
-        arr.push(low + step * i);
-    }
-
-    return arr;
-}
-
 function drawPolar(ctx, fth, tr, tarr) {
     var fx = function(t) {
         return tr(t) * Math.cos(fth(t));
@@ -79,7 +47,24 @@ function drawPolar(ctx, fth, tr, tarr) {
     drawParametric(ctx, fx, fy, tarr);
 }
 
-function drawPolar2(ctx, fth, tr, tarr) {
+/// Draw Segments
+
+function drawLineSegment(ctx, x1, y1, x2, y2) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();   
+}
+function drawParametricSegments(ctx, fx, fy, tarr) {
+    for (var i=0; i<(tarr.length - 1); i++) {
+        var x1 = fx(tarr[i]);
+        var y1 = fy(tarr[i]);
+        var x2 = fx(tarr[i + 1]);
+        var y2 = fy(tarr[i + 1]);
+        drawLineSegment(ctx, x1, y1, x2, y2);
+    }
+}
+function drawPolarSegments(ctx, fth, tr, tarr) {
     var fx = function(t) {
         return tr(t) * Math.cos(fth(t));
     }
@@ -88,46 +73,52 @@ function drawPolar2(ctx, fth, tr, tarr) {
         return tr(t) * Math.sin(fth(t));
     }
 
-    drawParametric2(ctx, fx, fy, tarr);
+    drawParametricSegments(ctx, fx, fy, tarr);
 }
 
-function CreateAnimation(drawFrame) {
-    var animationStart = -1;
-    var continueAnimation = false;
-    var previousTimestamp = 0;
-    var animWrapper = function(currentTimestamp) {
-        if (previousTimestamp == 0) {
-            previousTimestamp = currentTimestamp;
-        }
+/// Draw Dots
 
-        if (animationStart == -1) {
-            animationStart = currentTimestamp;
-        }
+function drawDot(ctx, x, y, radius) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, 2 * Math.PI, false);
+    ctx.fill();
+}
 
-        var relativeTimestamp = currentTimestamp - animationStart;
-        var duration = currentTimestamp - previousTimestamp;
+function drawParametricDots(ctx, fx, fy, fradius, tarr) {
+    for (var i=0; i<(tarr.length - 1); i++) {
+        var radius = fradius(tarr[i]);
+        var x = fx(tarr[i]);
+        var y = fy(tarr[i]);
+        drawDot(ctx, x, y, radius);
+    }
+}
 
-
-        drawFrame(relativeTimestamp, duration);
-
-        if (continueAnimation) {
-            requestAnimationFrame(animWrapper);
-        }
+function drawPolarDots(ctx, fth, tr, fradius, tarr) {
+    var fx = function(t) {
+        return tr(t) * Math.cos(fth(t));
     }
 
-    var startAnimation = function() {
-        continueAnimation = true;
-        requestAnimationFrame(animWrapper);  
+    var fy = function(t) {
+        return tr(t) * Math.sin(fth(t));
     }
 
-    var stopAnimation = function() {
-        continueAnimation = false;
+    drawParametricDots(ctx, fx, fy, fradius, tarr);
+}
+
+
+
+// Util
+
+function range(low, high, N) {
+    var delta = (high - low);
+    var step = delta / N;
+    var arr = [];
+
+    for (var i=0; i<(N+1); i++) {
+        arr.push(low + step * i);
     }
 
-    return {
-        'start': startAnimation,
-        'stop': stopAnimation,
-    }
+    return arr;
 }
 
 function normalizedSin(t) {
@@ -153,6 +144,8 @@ function remap(prevLow, prevHigh, newLow, newHigh) {
         return newLow + newT * newDiff;
     }
 }
+
+// Draw Primitives 
 
 function drawCircle(ctx, R, x, y) {
     drawParametric(ctx, function(t){
@@ -183,6 +176,8 @@ function drawMarker(ctx, size, x, y) {
     drawCircle(ctx, size, x, y);
     drawX(ctx, 0.5 * size * Math.sqrt(2), x, y);
 }
+
+// Transform Util
 
 function CGTransformIdentity() {
     return [1, 0, 0, 1, 0, 0];
@@ -253,22 +248,66 @@ function applyTransform(ctx, transform) {
     ctx.transform.apply(ctx, transform);
 }
 
+// Animation
+
+function CreateAnimation(drawFrame) {
+    var animationStart = -1;
+    var continueAnimation = false;
+    var previousTimestamp = 0;
+    var animWrapper = function(currentTimestamp) {
+        if (previousTimestamp == 0) {
+            previousTimestamp = currentTimestamp;
+        }
+
+        if (animationStart == -1) {
+            animationStart = currentTimestamp;
+        }
+
+        var relativeTimestamp = currentTimestamp - animationStart;
+        var duration = currentTimestamp - previousTimestamp;
+
+
+        drawFrame(relativeTimestamp, duration);
+
+        if (continueAnimation) {
+            requestAnimationFrame(animWrapper);
+        }
+    }
+
+    var startAnimation = function() {
+        continueAnimation = true;
+        requestAnimationFrame(animWrapper);  
+    }
+
+    var stopAnimation = function() {
+        continueAnimation = false;
+    }
+
+    return {
+        'start': startAnimation,
+        'stop': stopAnimation,
+    }
+}
+
+
+
+
+
+
+
+
 var anim = CreateAnimation(function(curr, duration) {
-    var L = 2
-    var N = 8;
-    var Mstart = 4.0
-    var Mend = 4.0;
+    var N = 30;
+    var animLow = N - 2;
+    var animHigh = N + 2;
+    var ROWS = 10;
 
-    var animLow = N / Mstart;
-    var animHigh = N * (0.5 - (0.5 / Mend));
-
-    var osc = oscillation(animLow, animHigh, 30000)
+    var osc = oscillation(animLow, animHigh, 10000)
     var scaleMap = remap(animLow, animHigh, -0.4, 0.4);
-    var rotMap = remap(animLow, animHigh, 0.0, Math.PI * 2);
 
     // DEBUG
     // osc = function(t) {
-    //     return 3;
+    //     return 60;
     // }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -279,28 +318,33 @@ var anim = CreateAnimation(function(curr, duration) {
         applyTransform(ctx, trans);
 
         // Apply rotation
-        ctx.save();
-            var trans = CGTransformRotate(rotMap(osc(curr)));
-            applyTransform(ctx, trans);
-
-            ctx.save();
-                ctx.lineWidth=0.03;
-                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-                drawPolar2(ctx, function(t){
-                    return t
-                }, function(t){
-                    return 0.4
-                }, range(0, L * osc(curr) * 2 * Math.PI, N * L));
-            ctx.restore();
-        ctx.restore();
-
         // ctx.save();
-        //     var markerX = scaleMap(osc(curr))
-        //     var markerY = -0.4;
-        //     ctx.lineWidth=0.003;
-        //     ctx.strokeStyle = 'rgba(255,0,0,1.0)';
-        //     drawMarker(ctx, 0.02, markerX, markerY);
+        //     var trans = CGTransformRotate(rotMap(osc(curr)));
+        //     applyTransform(ctx, trans);
+
+
+        for (var i =-ROWS; i<=ROWS; i++) {
+            ctx.save();
+                ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                drawParametricDots(ctx, function(t){
+                    return t;
+                }, function(t){
+                    return 0.2 * Math.cos((2 * Math.PI * t * N) + (curr * 0.003) + 0.15 * i)
+                }, function(t){
+                    return (0.5 * 0.5 - (t * t)) * 0.1; 
+                }, range(-0.5, 0.5, osc(curr)))
+            ctx.restore();
+        }
+
         // ctx.restore();
+
+        ctx.save();
+            var markerX = scaleMap(osc(curr))
+            var markerY = -0.4;
+            ctx.lineWidth=0.003;
+            ctx.strokeStyle = 'rgba(255,0,0,1.0)';
+            drawMarker(ctx, 0.02, markerX, markerY);
+        ctx.restore();
 
     ctx.restore();
 
