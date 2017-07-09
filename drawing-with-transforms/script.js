@@ -314,6 +314,26 @@ function drawField(ctx, fx, fy, fsize, tRange, uRange) {
         var size = fsize(t, u);
         drawDot(ctx, x, y, size);
     }
+
+    for (var i=0; i<(tRange.length - 1); i++) {
+        for (var j=0; j<(uRange.length - 1); j++) {
+            var t = tRange[i];
+            var u = uRange[j];
+            var x = fx(t, u);
+            var y = fy(t, u);
+            var tNext = tRange[i + 1];
+            var uNext = uRange[j + 1];
+            
+            var xRight = fx(tNext, u);
+            var yRight = fy(tNext, u);
+
+            var xBottom = fx(t, uNext);
+            var yBottom = fy(t, uNext);
+
+            drawLineSegment(ctx, x, y, xRight, yRight);
+            drawLineSegment(ctx, x, y, xBottom, yBottom);
+        }
+    }    
 }
 
 function funcInterpolate2(f, g) {
@@ -328,16 +348,28 @@ function funcInterpolate2(f, g) {
 var fromAngle = 0;
 var toAngle = 0.3333 * Math.PI;
 
+// var fx = funcInterpolate2(function (u, v) {
+//     return Math.cos(fromAngle) * u - Math.sin(fromAngle) * v;
+// }, function(u, v) {
+//     return Math.cos(toAngle) * u - Math.sin(toAngle) * v;
+// })
+
+// var fy = funcInterpolate2(function (u, v) {
+//     return Math.sin(fromAngle) * u + Math.cos(fromAngle) * v;
+// }, function(u, v) {
+//     return Math.sin(toAngle) * u + Math.cos(toAngle) * v;
+// })
+
 var fx = funcInterpolate2(function (u, v) {
-    return Math.cos(fromAngle) * u - Math.sin(fromAngle) * v;
+    return u
 }, function(u, v) {
-    return Math.cos(toAngle) * u - Math.sin(toAngle) * v;
+    return u + Math.cos(2 * Math.PI * v);
 })
 
 var fy = funcInterpolate2(function (u, v) {
-    return Math.sin(fromAngle) * u + Math.cos(fromAngle) * v;
+    return v;
 }, function(u, v) {
-    return Math.sin(toAngle) * u + Math.cos(toAngle) * v;
+    return v + Math.cos(2 * Math.PI * u);
 })
 
 function render(t) {
@@ -347,8 +379,10 @@ function render(t) {
     applyTransform(ctx, trans);
     ctx.save();
         ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.lineWidth=0.003;
         drawField(ctx, fx(t), fy(t), function(t, u) {
-            return 0.01;
+            return 0.005;
         }, range(-2, 2, 50), range(-2, 2, 50))
     ctx.restore();
     ctx.restore();
@@ -359,6 +393,13 @@ render(0)
 function sliderChange(t) {
     render(t);
 }
+
+
+var anim = CreateAnimation(function(curr, duration) {
+    var osc = oscillation(-0.1, 0.1, 5000);
+    render(osc(curr));
+});
+anim.start();
 
 
 
