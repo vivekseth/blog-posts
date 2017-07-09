@@ -336,37 +336,24 @@ function drawField(ctx, fx, fy, fsize, tRange, uRange) {
     }    
 }
 
-function funcInterpolate2(f, g) {
+function funcInterpolate(f, g) {
     return function(t) {
-        return function(u, v) {
-            return ((1 - t) * f(u, v)) + (t * g(u, v))
+        return function() {
+            return ((1 - t) * f.apply(null, arguments)) + (t * g.apply(null, arguments))
         }
     }
 }
 
-
 var fromAngle = 0;
 var toAngle = 0.3333 * Math.PI;
 
-// var fx = funcInterpolate2(function (u, v) {
-//     return Math.cos(fromAngle) * u - Math.sin(fromAngle) * v;
-// }, function(u, v) {
-//     return Math.cos(toAngle) * u - Math.sin(toAngle) * v;
-// })
-
-// var fy = funcInterpolate2(function (u, v) {
-//     return Math.sin(fromAngle) * u + Math.cos(fromAngle) * v;
-// }, function(u, v) {
-//     return Math.sin(toAngle) * u + Math.cos(toAngle) * v;
-// })
-
-var fx = funcInterpolate2(function (u, v) {
+var fx = funcInterpolate(function (u, v) {
     return u
 }, function(u, v) {
     return u + Math.cos(2 * Math.PI * v);
 })
 
-var fy = funcInterpolate2(function (u, v) {
+var fy = funcInterpolate(function (u, v) {
     return v;
 }, function(u, v) {
     return v + Math.cos(2 * Math.PI * u);
