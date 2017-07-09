@@ -1,0 +1,14 @@
+{
+  "name": "gif.js",
+  "homepage": "https://github.com/jnordberg/gif.js",
+  "version": "0.1.6",
+  "_release": "0.1.6",
+  "_resolution": {
+    "type": "version",
+    "tag": "v0.1.6",
+    "commit": "fe18289fa675333d36ba4cd9f86a56ffc20c3c5a"
+  },
+  "_source": "https://github.com/jnordberg/gif.js.git",
+  "_target": "^0.1.6",
+  "_originalSource": "gif.js"
+}

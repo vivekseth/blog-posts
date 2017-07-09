@@ -79,6 +79,8 @@ function drawPolarSegments(ctx, fth, tr, tarr) {
 /// Draw Dots
 
 function drawDot(ctx, x, y, radius) {
+
+
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, 2 * Math.PI, false);
     ctx.fill();
@@ -289,70 +291,150 @@ function CreateAnimation(drawFrame) {
     }
 }
 
+function crossProductArr(A, B) {
+    var outputArr = [];
+    for (var i=0; i<A.length; i++) {
+        for (var j=0; j<B.length; j++) {
+            outputArr.push([A[i], B[j]]);
+        }
+    }
+    return outputArr;
+}
+
+function drawField(ctx, fx, fy, fsize, tRange, uRange) {
+    tuRange = crossProductArr(tRange, uRange);
+
+    console.log(tuRange);
+
+    for (var i=0; i<tuRange.length; i++) {
+        var t = tuRange[i][0];
+        var u = tuRange[i][1];
+        var x = fx(t, u);
+        var y = fy(t, u);
+        var size = fsize(t, u);
+        drawDot(ctx, x, y, size);
+    }
+}
+
+function funcInterpolate2(f, g) {
+    return function(t) {
+        return function(u, v) {
+            return ((1 - t) * f(u, v)) + (t * g(u, v))
+        }
+    }
+}
 
 
+var fromAngle = 0;
+var toAngle = 0.3333 * Math.PI;
 
+var fx = funcInterpolate2(function (u, v) {
+    return Math.cos(fromAngle) * u - Math.sin(fromAngle) * v;
+}, function(u, v) {
+    return Math.cos(toAngle) * u - Math.sin(toAngle) * v;
+})
 
+var fy = funcInterpolate2(function (u, v) {
+    return Math.sin(fromAngle) * u + Math.cos(fromAngle) * v;
+}, function(u, v) {
+    return Math.sin(toAngle) * u + Math.cos(toAngle) * v;
+})
 
-
-
-var anim = CreateAnimation(function(curr, duration) {
-    var N = 30;
-    var animLow = N - 2;
-    var animHigh = N + 2;
-    var ROWS = 10;
-
-    var osc = oscillation(animLow, animHigh, 10000)
-    
-    // DEBUG
-    // var scaleMap = remap(animLow, animHigh, -0.4, 0.4);
-    // osc = function(t) {
-    //     return 60;
-    // }
-
+function render(t) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Apply centering transform
     ctx.save();
-        var trans = CGTransformConcat(CGTransformScale(WIDTH, HEIGHT), CGTransformTranslate(0.5, 0.5));
-        applyTransform(ctx, trans);
-
-        // Apply rotation
-        // ctx.save();
-        //     var trans = CGTransformRotate(0.001 * curr);
-        //     applyTransform(ctx, trans);
-
-
-            for (var i =-ROWS; i<=ROWS; i++) {
-                ctx.save();
-                    ctx.fillStyle = 'rgba(255,255,255,0.2)';
-                    drawParametricDots(ctx, function(t){
-                        return t;
-                    }, function(t){
-                        return 0.2 * Math.cos((2 * Math.PI * t * N) + (curr * 0.003) + 0.15 * i)
-                    }, function(t){
-                        return (0.5 * 0.5 - (t * t)) * 0.1; 
-                    }, range(-0.5, 0.5, osc(curr)))
-                ctx.restore();
-            }
-
-        // ctx.restore();
-
-        // DEBUG
-        // ctx.save();
-        //     var markerX = scaleMap(osc(curr))
-        //     var markerY = -0.4;
-        //     ctx.lineWidth=0.003;
-        //     ctx.strokeStyle = 'rgba(255,0,0,1.0)';
-        //     drawMarker(ctx, 0.02, markerX, markerY);
-        // ctx.restore();
-
+    var trans = CGTransformConcat(CGTransformScale(WIDTH, HEIGHT), CGTransformTranslate(0.5, 0.5));
+    applyTransform(ctx, trans);
+    ctx.save();
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        drawField(ctx, fx(t), fy(t), function(t, u) {
+            return 0.01;
+        }, range(-2, 2, 50), range(-2, 2, 50))
     ctx.restore();
+    ctx.restore();
+}
 
-    // ctx.font = "14px Avenir";
-    // ctx.fillStyle = 'rgba(255,0,0,1.0)';
-    // ctx.fillText("" + Math.floor(100 * osc(curr)) / 100, 0 + 15, 10 + 15);
-});
-anim.start()
+render(0)
+
+function sliderChange(t) {
+    render(t);
+}
 
 
+
+
+// // Create a capturer that exports PNG images in a TAR file
+// // var capturer = new CCapture( { format: 'png' } );
+// // capturer.start();
+
+// // console.log('hello world');
+
+// var anim = CreateAnimation(function(curr, duration) {
+//     var N = 30;
+//     var animLow = N - 2;
+//     var animHigh = N + 2;
+//     var ROWS = 10;
+
+//     console.log('anim');
+
+//     var osc = oscillation(animLow, animHigh, 10000)
+    
+//     // DEBUG
+//     // var scaleMap = remap(animLow, animHigh, -0.4, 0.4);
+//     // osc = function(t) {
+//     //     return 60;
+//     // }
+
+//     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+//     // Apply centering transform
+//     ctx.save();
+//         var trans = CGTransformConcat(CGTransformScale(WIDTH, HEIGHT), CGTransformTranslate(0.5, 0.5));
+//         applyTransform(ctx, trans);
+
+//         // Apply rotation
+//         // ctx.save();
+//         //     var trans = CGTransformRotate(0.001 * curr);
+//         //     applyTransform(ctx, trans);
+
+
+//             for (var i =-ROWS; i<=ROWS; i++) {
+//                 ctx.save();
+//                     ctx.fillStyle = 'rgba(255,255,255,0.2)';
+//                     drawParametricDots(ctx, function(t){
+//                         return t;
+//                     }, function(t){
+//                         return 0.2 * Math.cos((2 * Math.PI * t * N) + (curr * 0.003) + 0.15 * i)
+//                     }, function(t){
+//                         return (0.5 * 0.5 - (t * t)) * 0.1; 
+//                     }, range(-0.5, 0.5, osc(curr)))
+//                 ctx.restore();
+//             }
+
+//         // ctx.restore();
+
+//         // DEBUG
+//         // ctx.save();
+//         //     var markerX = scaleMap(osc(curr))
+//         //     var markerY = -0.4;
+//         //     ctx.lineWidth=0.003;
+//         //     ctx.strokeStyle = 'rgba(255,0,0,1.0)';
+//         //     drawMarker(ctx, 0.02, markerX, markerY);
+//         // ctx.restore();
+
+//     ctx.restore();
+
+//     // ctx.font = "14px Avenir";
+//     // ctx.fillStyle = 'rgba(255,0,0,1.0)';
+//     // ctx.fillText("" + Math.floor(100 * osc(curr)) / 100, 0 + 15, 10 + 15);
+
+//     // capturer.capture(canvas);
+// });
+// anim.start();
+
+// // setTimeout(function(){
+// //     console.log('END')
+// //     capturer.stop();
+// //     capturer.save();
+// //     anim.stop();
+// // }, 1000);
