@@ -74,56 +74,98 @@ function drawPolar(ctx, fth, tr, tarr) {
     drawParametric(ctx, fx, fy, tarr);
 }
 
-function CreateAnimation(anim) {
-    var shouldContinueAnimation = false;
-    var previousTimestamp = 0;
-    function animationWrapper(currentTimestamp) {
-        if (previousTimestamp == 0) {
-            previousTimestamp = currentTimestamp;
+function drawParametric3D(ctx, fx, fy, fz, transform, tarr) {
+    function center(coordinate, dimensionLength) {
+        return (coordinate + 0.5) * dimensionLength;
+    }
+
+    var first = true;
+
+    ctx.beginPath();
+    for (var i=0; i<tarr.length; i++) {
+        var x = fx(tarr[i]);
+        var y = fy(tarr[i]);
+        var z = fz(tarr[i]);
+
+        var px = center(x/z, WIDTH);
+        var py = center(y/z, HEIGHT);
+
+        if (first) {
+            ctx.moveTo(px, py);
+            first = false;
         }
-
-        var duration = currentTimestamp - previousTimestamp;
-
-        anim(currentTimestamp, duration);
-
-        if (shouldContinueAnimation){
-            requestAnimationFrame(animationWrapper);
+        else {
+            ctx.lineTo(px, py);
         }
     }
-
-    function stopAnimation() {
-        shouldContinueAnimation = false;
-    }
-
-    function startAnimation() {
-        shouldContinueAnimation = true;
-        requestAnimationFrame(animationWrapper);
-    }
-
-    return {
-        'start' : startAnimation,
-        'stop' : stopAnimation,
-    };
+    ctx.stroke();
 }
 
-var a = CreateAnimation(function(timestamp){
-    var x = (10 * (0.5 * (Math.cos(0.0005 * timestamp) + 1.0)) + 150);
+drawParametric3D(ctx, function(t){
+    return 1 * Math.cos(t);
+}, function(t){
+    return -1;
+}, function(t){
+    return 1 * Math.sin(t) + 3;
+}, null, range(0, 2*Math.PI, 100))
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Code Sample
-    ctx.lineWidth=0.3; // (Math.cos(0.01 * timestamp) * 0.3) + 0.4;
-    drawPolar(ctx, function(t){
-        return t
-    }, function(t){
-        return (0.5) * Math.sin(t / 0.7);
-    }, range(0, 200, x));
-});
-a.start();
 
-setTimeout(function(){
-    a.stop();
-}, 3000);
+
+
+
+
+
+// function CreateAnimation(anim) {
+//     var shouldContinueAnimation = false;
+//     var previousTimestamp = 0;
+//     function animationWrapper(currentTimestamp) {
+//         if (previousTimestamp == 0) {
+//             previousTimestamp = currentTimestamp;
+//         }
+
+//         var duration = currentTimestamp - previousTimestamp;
+
+//         anim(currentTimestamp, duration);
+
+//         if (shouldContinueAnimation){
+//             requestAnimationFrame(animationWrapper);
+//         }
+//     }
+
+//     function stopAnimation() {
+//         shouldContinueAnimation = false;
+//     }
+
+//     function startAnimation() {
+//         shouldContinueAnimation = true;
+//         requestAnimationFrame(animationWrapper);
+//     }
+
+//     return {
+//         'start' : startAnimation,
+//         'stop' : stopAnimation,
+//     };
+// }
+
+// var a = CreateAnimation(function(timestamp){
+//     var x = (10 * (0.5 * (Math.cos(0.0005 * timestamp) + 1.0)) + 150);
+
+//     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+//     // Code Sample
+//     ctx.lineWidth=0.3; // (Math.cos(0.01 * timestamp) * 0.3) + 0.4;
+//     drawPolar(ctx, function(t){
+//         return t
+//     }, function(t){
+//         return (0.5) * Math.sin(t / 0.7);
+//     }, range(0, 200, x));
+// });
+// a.start();
+
+// setTimeout(function(){
+//     a.stop();
+// }, 3000);
 
 
 
