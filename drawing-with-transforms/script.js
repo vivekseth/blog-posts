@@ -22,43 +22,43 @@ var ctx = canvas.getContext("2d");
 var ActiveHandlers = {};
 
 function _defaultTransformCamera() {
-    var position = math.matrix([0, 0, 5]);
-    var target = math.matrix([0, 0, 0]);
-    var up = math.matrix([0, 1, 0]);
+    var position = [0, 0, 5];
+    var target = [0, 0, 0];
+    var up = [0, 1, 0];
     return Transform3DCamera(position, target, up);
 }
 
 function CreateCamera() {
     var data = {};
-    data.position = math.matrix([0, 0, 5]);
-    data.target = math.matrix([0, 0, 0]);
-    data.up = math.matrix([0, 1, 0]);
+    data.position = [0, 0, 5];
+    data.target = [0, 0, 0];
+    data.up = [0, 1, 0];
     data.matrix = function() {
         return Transform3DCamera(this.position, this.target, this.up);
     }.bind(data);
 
     data.getPosition = function() {
-        return this.position.toArray();
+        return this.position;
     }.bind(data);
 
     data.setPosition = function(pos) {
-        this.position = math.matrix(pos);
+        this.position = pos;
     }.bind(data);
 
     data.getTarget = function() {
-        return this.target.toArray();
+        return this.target;
     }.bind(data);
 
     data.setTarget = function(target) {
-        this.target = math.matrix(target);
+        this.target = target;
     }.bind(data);
 
     data.getUp = function() {
-        return this.up.toArray();
+        return this.up;
     }.bind(data);
 
      data.setUp = function(up) {
-        this.up = math.matrix(up);
+        this.up = up;
     }.bind(data);
 
     return data;
@@ -78,7 +78,7 @@ var cubes = (function(n){
         arr.push(CreateCubeNode());
     }
     return arr;
-})(100);
+})(10);
 
 function render(t) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -90,8 +90,10 @@ function render(t) {
             // Draw stuff
             var projectionFromCamera = _defaultTransformPerspective();
             var cameraFromWorld = Camera.matrix();
-            var worldFromModel = Transform3DRotation(math.matrix([0, 1, 0]), Math.PI * t);
-            var projectionFromModel = math.multiply(math.multiply(projectionFromCamera, cameraFromWorld), worldFromModel);
+            var worldFromModel = Transform3DRotation([0, 1, 0], Math.PI * t);
+            var projectionFromModel = _matrixMultiply(_matrixMultiply(projectionFromCamera, cameraFromWorld), worldFromModel);
+
+            console.log(projectionFromCamera, cameraFromWorld, worldFromModel);
 
             ctx.lineWidth = 0.0025;
 
@@ -99,7 +101,7 @@ function render(t) {
             
             for (var i = 0; i < cubes.length; i++) {
                 var c = cubes[i];
-                c.scale(size - i * 0.01);
+                c.scale(size - i * 0.1);
                 c.draw(ctx, projectionFromModel);
             }
 
@@ -116,8 +118,11 @@ var anim = CreateAnimation(function(relativeTimestamp, duration){
 
     // Draw
     render(0.0001 * relativeTimestamp);
+
+    console.log('render')
 })
 anim.start();
+// anim.stop();
 
 
 document.addEventListener('keydown', function (event) {

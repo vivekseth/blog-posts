@@ -49,8 +49,10 @@ function _transformFromMatrix(m) {
 
 // return A * B
 function _matrixMultiply(a, b) {
-    var aNumRows = a.length, aNumCols = a[0].length;
-    var bNumRows = b.length, bNumCols = b[0].length;
+    var aNumRows = a.length
+    var aNumCols = a[0].length;
+    var bNumRows = b.length
+    var bNumCols = b[0].length;
     // initialize array of rows
     var m = new Array(aNumRows);
     for (var r = 0; r < aNumRows; ++r) {
@@ -71,35 +73,121 @@ function CGTransformApply(ctx, transform) {
     ctx.transform.apply(ctx, transform);
 }
 
-function _normalize(vec) {
-    // function _norm(vec) {
-    //     var value = 0;
-    //     for (var i=0; i<vec.length; i++) {
-    //         value += vec[i] * vec[i];
-    //     }
-    //     return Math.sqrt(value);
-    // }
+// Linear Algebra Util
 
-    return math.divide(vec, math.norm(vec));
+function _multiply(vec, value) {
+    return vec.map(function(e){
+        return value * e;
+    })
 }
 
-var _TRANSFORM_3D_IDENTITY = math.eye(4);
+function _mutliplyMatrixVector(matrix, vector) {
+    if (matrix[0].length != vector.length) {
+        throw 'invalid matrix <> vector combination'
+    }
+
+    return matrix.map(function(row){
+        var sum = 0;
+
+        for (var i=0; i<row.length; i++) {
+            sum += (row[i] * vector[i]);
+        }
+
+        return sum;
+    });
+}
+
+function _divide(vec, value) {
+    return vec.map(function(e){
+        return e / value;
+    })
+}
+
+function _norm(vec) {
+    var value = 0;
+    for (var i=0; i<vec.length; i++) {
+        value += vec[i] * vec[i];
+    }
+    return Math.sqrt(value);
+}
+
+function _normalize(vec) {
+    return _divide(vec, _norm(vec));
+}
+
+function _subtract(A, B) {
+    if (A.length != B.length) {
+        throw 'lengths must match';
+    }
+
+    var out = new Array(A.length);
+    for (var i = 0; i < A.length; i++) {
+        out[i] = A[i] - B[i];
+    }
+    return out;
+}
+
+function _crossProduct(a, b) {
+    // Check lengths
+    if (a.length != 3 || b.length != 3) {
+        throw 'length must be 3';
+    }
+
+    return [
+        a[1]*b[2] - a[2]*b[1],
+        a[2]*b[0] - a[0]*b[2],
+        a[0]*b[1] - a[1]*b[0]
+    ];
+}
+
+function _transpose(A) {
+    var out = new Array(A[0].length);
+    
+    for (var i = 0; i < out.length; i++) {
+        out[i] = new Array(A.length);
+    }
+
+    for (var i = 0; i < A.length; i++) {
+        for (var j = 0; j < A.length; j++) {
+            out[j][i] = A[i][j];
+        }
+    }
+
+    return out;
+}
+
+
+// 3D Transform Util
+
 function Transform3DIdentity() {
-    return _TRANSFORM_3D_IDENTITY;
+    return [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1],
+    ];
 }
 
 function Transform3DTranslation(vec) {
-    var tx = vec.get([0]);
-    var ty = vec.get([1]);
-    var tz = vec.get([2]);
+    var tx = vec[0];
+    var ty = vec[1];
+    var tz = vec[2];
 
     var X = [1, 0, 0, tx];
     var Y = [0, 1, 0, ty];
     var Z = [0, 0, 1, tz];
     var W = [0, 0, 0, 1];
 
-    // TODO(vivek): should this be transposed??
-    return math.matrix([X, Y, Z, W]);
+    return [X, Y, Z, W];
+}
+
+function Transform3DScale(factor) {
+    var X = [factor, 0, 0, 0];
+    var Y = [0, factor, 0, 0];
+    var Z = [0, 0, factor, 0];
+    var W = [0, 0, 0, 1];
+
+    return [X, Y, Z, W];
 }
 
 function Transform3DPerspective(aspect, fovy, near, far) {
@@ -111,7 +199,7 @@ function Transform3DPerspective(aspect, fovy, near, far) {
     var Q = [0, yScale, 0, 0];
     var R = [0, 0, zRange, wzScale];
     var S = [0, 0, -1, 0];
-    return math.matrix([P, Q, R, S]);
+    return [P, Q, R, S];
 }
 
 function _defaultTransformPerspective() {
@@ -123,25 +211,25 @@ function _defaultTransformPerspective() {
 }
 
 function Transform3DCamera(position, target, up) {
-    var normCameraDirection = _normalize(math.subtract(position, target));
-    var normCameraRight = _normalize(math.cross(up, normCameraDirection));
-    var normCameraUp = math.cross(normCameraDirection, normCameraRight);
-    var cameraLocalCoordinateSpaceMatrix = math.matrix([
-        [normCameraRight.get([0]), normCameraUp.get([0]), normCameraDirection.get([0]), 0],
-        [normCameraRight.get([1]), normCameraUp.get([1]), normCameraDirection.get([1]), 0],
-        [normCameraRight.get([2]), normCameraUp.get([2]), normCameraDirection.get([2]), 0],
-        [                       0,                     0,                            0, 1]
-    ]);
+    var normCameraDirection = _normalize(_subtract(position, target));
+    var normCameraRight = _normalize(_crossProduct(up, normCameraDirection));
+    var normCameraUp = _crossProduct(normCameraDirection, normCameraRight);
+    var cameraLocalCoordinateSpaceMatrix = [
+        [normCameraRight[0], normCameraUp[0], normCameraDirection[0], 0],
+        [normCameraRight[1], normCameraUp[1], normCameraDirection[1], 0],
+        [normCameraRight[2], normCameraUp[2], normCameraDirection[2], 0],
+        [                 0,               0,                      0, 1]
+    ];
     //return cameraLocalCoordinateSpaceMatrix;
 
-    var cameraTranslationMatrix = Transform3DTranslation(math.multiply(-1, position));
-    return math.multiply(math.transpose(cameraLocalCoordinateSpaceMatrix), cameraTranslationMatrix);
+    var cameraTranslationMatrix = Transform3DTranslation(_multiply(position, -1));
+    return _matrixMultiply(_transpose(cameraLocalCoordinateSpaceMatrix), cameraTranslationMatrix);
 }
 
 function _defaultTransformCamera() {
-    var position = math.matrix([0, 0, 5]);
-    var target = math.matrix([0, 0, 0]);
-    var up = math.matrix([0, 1, 0]);
+    var position = [0, 0, 5];
+    var target = [0, 0, 0];
+    var up = [0, 1, 0];
     return Transform3DCamera(position, target, up);
 }
 
@@ -150,9 +238,9 @@ function Transform3DRotation(axisVec, angle) {
     var s = Math.sin(angle);
     
     var axis = {};
-    axis.x = axisVec.get([0]);
-    axis.y = axisVec.get([1]);
-    axis.z = axisVec.get([2]);
+    axis.x = axisVec[0];
+    axis.y = axisVec[1];
+    axis.z = axisVec[2];
 
 
     var X = [
@@ -178,5 +266,5 @@ function Transform3DRotation(axisVec, angle) {
 
     var W = [0, 0, 0, 1];
 
-    return math.transpose(math.matrix([X, Y, Z, W]));
+    return _transpose([X, Y, Z, W]);
 }
