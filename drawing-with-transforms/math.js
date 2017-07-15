@@ -136,6 +136,18 @@ function _normalize(vec) {
     return _divide(vec, _norm(vec));
 }
 
+function _add(A, B) {
+    if (A.length != B.length) {
+        throw 'lengths must match';
+    }
+
+    var out = new Array(A.length);
+    for (var i = 0; i < A.length; i++) {
+        out[i] = A[i] + B[i];
+    }
+    return out;
+}
+
 function _subtract(A, B) {
     if (A.length != B.length) {
         throw 'lengths must match';

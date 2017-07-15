@@ -1,3 +1,13 @@
+// Globals
+
+var DIM_X = 0;
+var DIM_Y = 1;
+var DIM_Z = 2;
+var DIM_W = 3;
+
+
+// TOOD(vivek): move all draw primitives out to separate file. 
+
 /// Draw Path
 
 function drawParametric(ctx, fx, fy, tarr) {
@@ -153,6 +163,7 @@ function drawField(ctx, fx, fy, fsize, tRange, uRange) {
 
 // Range Util
 
+// TODO(vivek): Create non-linear ranges. 
 function createRange(low, high, N) {
     var delta = (high - low);
     var step = delta / N;
@@ -165,27 +176,19 @@ function createRange(low, high, N) {
     return arr;
 }
 
-function normalizedSin(t) {
-    return ((Math.sin(t) + 1) * 0.5);
-}
-
-function normalizedCos(t) {
-    return ((Math.cos(t) + 1) * 0.5);
-}
-
-function oscillation(low, high, period) {
-    var diff = high - low;
-    return function(t) {
-        return diff * (1 - normalizedCos(Math.PI * 2 * t / period)) + low;
-    }
-}
-
 function remap(prevLow, prevHigh, newLow, newHigh) {
     return function(t) {
         var prevDiff = (prevHigh - prevLow);
         var newT = ((t - prevLow) / prevDiff);
         var newDiff = (newHigh - newLow);
         return newLow + newT * newDiff;
+    }
+}
+
+function oscillation(low, high, period) {
+    var diff = high - low;
+    return function(t) {
+        return diff * (1 - normalizedCos(Math.PI * 2 * t / period)) + low;
     }
 }
 
@@ -199,7 +202,29 @@ function crossProductArr(A, B) {
     return outputArr;
 }
 
-// TODO(vivek): Create non-linear range's. 
+// Interpolation 
+
+function interpolateValue(A, B) {
+    return function(t) {
+        return ((1 - t) * A) + (t * B);
+    }
+}
+
+function interpolateFunc(f, g) {
+    return function(t) {
+        return function() {
+            return interpolateValue(f.apply(null, arguments), g.apply(null, arguments))(t);
+        }
+    }
+}
+
+function normalizedSin(t) {
+    return ((Math.sin(t) + 1) * 0.5);
+}
+
+function normalizedCos(t) {
+    return ((Math.cos(t) + 1) * 0.5);
+}
 
 // Draw 3D
 
@@ -234,6 +259,8 @@ function drawParametric3D(ctx, fx, fy, fz, transform, tarr) {
     ctx.stroke();
 }
 
+var i = 0;
+
 function drawLine3D(ctx, p1, p2, transform) {
     var p1Copy = p1.slice();
     var p2Copy = p2.slice();
@@ -243,6 +270,14 @@ function drawLine3D(ctx, p1, p2, transform) {
 
     var tp1 = _mutliplyMatrixVector(transform, p1Copy);
     var tp2 = _mutliplyMatrixVector(transform, p2Copy);
+    if ((i++) % 30 == 0) {
+        console.log(tp1);
+    }
+
+    if (tp1[DIM_W] <= 0 || tp2[DIM_W] <= 0) {
+        return;
+    }
+
 
     var projPoint1 = _projectedPoint(tp1);
     var projPoint2 = _projectedPoint(tp2);
@@ -253,17 +288,11 @@ function drawLine3D(ctx, p1, p2, transform) {
     ctx.stroke(); 
 }
 
-function cubeLines() {
+function CreateCubeLinePoints() {
     function _createCubeLineFuncs() {
         function _createConstFunc(c) {
             return function(t) {
                 return c;
-            }
-        }
-
-        function _createIdentity() {
-            return function(t) {
-                return t;
             }
         }
 
@@ -276,7 +305,7 @@ function cubeLines() {
         var constFuncs = [_createConstFunc(1), _createConstFunc(-1)];
         var lineDataArray = crossProductArr([0, 1, 2], crossProductArr(constFuncs, constFuncs));
         return lineDataArray.map(function(lineData) {
-            return _arrayInsert(lineData[1], lineData[0], _createIdentity());
+            return _arrayInsert(lineData[1], lineData[0], function(t) {return t;});
         });
     }
     
@@ -295,15 +324,11 @@ function cubeLines() {
 }
 
 
-function drawCube(ctx, transform) {
-    var linePoints = cubeLines();
-    linePoints.map(function(points){
-        drawLine3D(ctx, points[0], points[1], transform);
-    })
-}
+// 3D Object Nodes
 
 function CreateAbstractNode() {
     var data = {};
+    // TODO(vivek): use one matrix to store transform. Its up to clients to tranform object in correct order. 
     data.scaleTransform = Transform3DIdentity();
     data.positionTransform = Transform3DIdentity();
     data.rotationTransform = Transform3DIdentity();
@@ -333,7 +358,7 @@ function CreateAbstractNode() {
 
 function CreateCubeNode() {
     var data = CreateAbstractNode();
-    data.linePoints = cubeLines();
+    data.linePoints = CreateCubeLinePoints();
     data.draw = function(ctx, projectionFromModel) {
         var transform = _matrixMultiply(projectionFromModel, this.localTransform());
         this.linePoints.map(function(points){
@@ -367,9 +392,6 @@ function CreateSphereNode(parallels, meridians) {
 
     return data;
 }
-
-
-
 
 
 // Animation Util
@@ -414,20 +436,5 @@ function CreateAnimation(drawFrame) {
     }
 }
 
-// Interpolation 
-
-function interpolateValue(A, B) {
-    return function(t) {
-        return ((1 - t) * A) + (t * B);
-    }
-}
-
-function interpolateFunc(f, g) {
-    return function(t) {
-        return function() {
-            return interpolateValue(f.apply(null, arguments), g.apply(null, arguments))(t);
-        }
-    }
-}
-
-
+// Renaming constructor to make more sense for a game
+var CreateRunLoop = CreateAnimation;
