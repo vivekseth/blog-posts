@@ -3,8 +3,8 @@
 function drawParametric(ctx, fx, fy, tarr) {
     ctx.beginPath();
     for (var i=0; i<tarr.length; i++) {
-        var x = fx(tarr[i]), WIDTH;
-        var y = fy(tarr[i]), HEIGHT;
+        var x = fx(tarr[i]);
+        var y = fy(tarr[i]);
         if (i == 0) {
             ctx.moveTo(x, y);
         }
@@ -289,10 +289,10 @@ function Transform3DTranslation(vec) {
     var ty = vec.get([1]);
     var tz = vec.get([2]);
 
-    var X = [1, 0, 0, 0];
-    var Y = [0, 1, 0, 0];
-    var Z = [0, 0, 1, 0];
-    var W = [tx, ty, tz, 1];
+    var X = [1, 0, 0, tx];
+    var Y = [0, 1, 0, ty];
+    var Z = [0, 0, 1, tz];
+    var W = [0, 0, 0, 1];
 
     // TODO(vivek): should this be transposed??
     return math.matrix([X, Y, Z, W]);
@@ -305,8 +305,8 @@ function Transform3DPerspective(aspect, fovy, near, far) {
     var wzScale = -2 * far * near / zRange;
     var P = [xScale, 0, 0, 0];
     var Q = [0, yScale, 0, 0];
-    var R = [0, 0, zRange, -1];
-    var S = [0, 0, wzScale, 0];
+    var R = [0, 0, zRange, wzScale];
+    var S = [0, 0, -1, 0];
     return math.matrix([P, Q, R, S]);
 }
 
@@ -332,9 +332,195 @@ function Transform3DCamera(position, target, up) {
         [normCameraRight.get([2]), normCameraUp.get([2]), normCameraDirection.get([2]), 0],
         [                       0,                     0,                            0, 1]
     ]);
-    var cameraTranslationMatrix = Transform3DTranslation(math.matrix.multiply(-1, position));
-    return math.multiply(cameraLocalCoordinateSpaceMatrix, cameraTranslationMatrix);
+    //return cameraLocalCoordinateSpaceMatrix;
+
+    var cameraTranslationMatrix = Transform3DTranslation(math.multiply(-1, position));
+    return math.multiply(math.transpose(cameraLocalCoordinateSpaceMatrix), cameraTranslationMatrix);
 }
+
+function _defaultTransformCamera() {
+    var position = math.matrix([0, 0, 5]);
+    var target = math.matrix([0, 0, 0]);
+    var up = math.matrix([0, 1, 0]);
+    return Transform3DCamera(position, target, up);
+}
+
+function Transform3DRotation(axisVec, angle) {
+    var c = Math.cos(angle);
+    var s = Math.sin(angle);
+    
+    var axis = {};
+    axis.x = axisVec.get([0]);
+    axis.y = axisVec.get([1]);
+    axis.z = axisVec.get([2]);
+
+
+    var X = [
+        axis.x * axis.x + (1 - axis.x * axis.x) * c,
+        axis.x * axis.y * (1 - c) - axis.z * s,
+        axis.x * axis.z * (1 - c) + axis.y * s,
+        0.0
+    ]
+
+    var Y = [
+        axis.x * axis.y * (1 - c) + axis.z * s,
+        axis.y * axis.y + (1 - axis.y * axis.y) * c,
+        axis.y * axis.z * (1 - c) - axis.x * s,
+        0.0
+    ]
+
+    var Z = [
+        axis.x * axis.z * (1 - c) - axis.y * s,
+        axis.y * axis.z * (1 - c) + axis.x * s,
+        axis.z * axis.z + (1 - axis.z * axis.z) * c,
+        0.0
+    ]
+
+    var W = [0, 0, 0, 1];
+
+    return math.transpose(math.matrix([X, Y, Z, W]));
+}
+
+// Draw 3D
+
+function _projectedPoint(point) {
+    var x = point.get([0]) / point.get([3]);
+    var y = point.get([1]) / point.get([3]);
+    return [x, y];
+}
+
+function drawParametric3D(ctx, fx, fy, fz, transform, tarr) {
+    ctx.beginPath();
+    for (var i=0; i<tarr.length; i++) {
+        var x = fx(tarr[i]);
+        var y = fy(tarr[i]);
+        var z = fz(tarr[i]);
+
+        var point = math.matrix([x, y, z, 1]);
+        var transformedPoint = math.multiply(transform, point);
+
+        // console.log(transformedPoint);
+
+        var newX = transformedPoint.get([0]) / transformedPoint.get([3]);
+        var newY = transformedPoint.get([1]) / transformedPoint.get([3]);
+
+        // console.log(newY, newY);
+
+        if (i == 0) {
+            ctx.moveTo(newX, newY);
+        }
+        else {
+            ctx.lineTo(newX, newY);
+        }
+    }
+    ctx.stroke();
+}
+
+function drawLine3D(ctx, p1, p2, transform) {
+    var p1Copy = p1.slice();
+    var p2Copy = p2.slice();
+
+    p1Copy.push(1);
+    p2Copy.push(1);
+
+    var tp1 = math.multiply(transform, math.matrix(p1Copy));
+    var tp2 = math.multiply(transform, math.matrix(p2Copy));
+
+    var projPoint1 = _projectedPoint(tp1);
+    var projPoint2 = _projectedPoint(tp2);
+
+    ctx.beginPath();
+    ctx.moveTo(projPoint1[0], projPoint1[1]);
+    ctx.lineTo(projPoint2[0], projPoint2[1]);
+    ctx.stroke(); 
+}
+
+function cubeLines() {
+    function _createCubeLineFuncs() {
+        function _createConstFunc(c) {
+            return function(t) {
+                return c;
+            }
+        }
+
+        function _createIdentity() {
+            return function(t) {
+                return t;
+            }
+        }
+
+        function _arrayInsert(arr, index, elem) {
+            var arrCopy = arr.slice();
+            arrCopy.splice(index, 0, elem);
+            return arrCopy;
+        }
+
+        var constFuncs = [_createConstFunc(1), _createConstFunc(-1)];
+        var lineDataArray = crossProductArr([0, 1, 2], crossProductArr(constFuncs, constFuncs));
+        return lineDataArray.map(function(lineData) {
+            return _arrayInsert(lineData[1], lineData[0], _createIdentity());
+        });
+    }
+    
+    var lineFuncs = _createCubeLineFuncs();
+    return lineFuncs.map(function(farr) {
+        function _evaluate(c) {
+            return function(f) {
+                return f(c);
+            }
+        }
+        return [
+            farr.map(_evaluate(-1)),
+            farr.map(_evaluate(1))
+        ]
+    })
+}
+
+
+function drawCube(ctx, transform) {
+    var linePoints = cubeLines();
+    linePoints.map(function(points){
+        drawLine3D(ctx, points[0], points[1], transform);
+    })
+}
+
+function drawCube2(ctx, transform) {
+    function _createCubeLineFuncs() {
+        function _createConstFunc(c) {
+            return function(t) {
+                return c;
+            }
+        }
+
+        function _createIdentity() {
+            return function(t) {
+                return t;
+            }
+        }
+
+        function _arrayInsert(arr, index, elem) {
+            var arrCopy = arr.slice();
+            arrCopy.splice(index, 0, elem);
+            return arrCopy;
+        }
+
+        var constFuncs = [_createConstFunc(1), _createConstFunc(-1)];
+        var lineDataArray = crossProductArr([0, 1, 2], crossProductArr(constFuncs, constFuncs));
+        return lineDataArray.map(function(lineData) {
+            return _arrayInsert(lineData[1], lineData[0], _createIdentity());
+        });
+    }
+    
+    var lineFuncs = _createCubeLineFuncs();
+    for (var i=0; i<lineFuncs.length; i++) {
+        var fx = lineFuncs[i][0];
+        var fy = lineFuncs[i][1];
+        var fz = lineFuncs[i][2];
+        drawParametric3D(ctx, fx, fy, fz, transform, [-1, 1]);
+    }
+}
+
+
 
 // Animation Util
 
