@@ -78,14 +78,14 @@ var cubes = (function(n){
         arr.push(CreateCubeNode());
     }
     return arr;
-})(10);
+})(200);
 
+var centeringTransform = CGTransformConcat(CGTransformScale(WIDTH, HEIGHT), CGTransformTranslate(0.5, 0.5));
 function render(t) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
         // Centering Transform
-        var trans = CGTransformConcat(CGTransformScale(WIDTH, HEIGHT), CGTransformTranslate(0.5, 0.5));
-        CGTransformApply(ctx, trans);
+        CGTransformApply(ctx, centeringTransform);
         ctx.save();
             // Draw stuff
             var projectionFromCamera = _defaultTransformPerspective();
@@ -93,15 +93,13 @@ function render(t) {
             var worldFromModel = Transform3DRotation([0, 1, 0], Math.PI * t);
             var projectionFromModel = _matrixMultiply(_matrixMultiply(projectionFromCamera, cameraFromWorld), worldFromModel);
 
-            console.log(projectionFromCamera, cameraFromWorld, worldFromModel);
-
-            ctx.lineWidth = 0.0025;
+            ctx.lineWidth = 0.0001;
 
             var size = 1.0;
             
             for (var i = 0; i < cubes.length; i++) {
                 var c = cubes[i];
-                c.scale(size - i * 0.1);
+                c.scale(size - i * 0.01);
                 c.draw(ctx, projectionFromModel);
             }
 
@@ -118,8 +116,6 @@ var anim = CreateAnimation(function(relativeTimestamp, duration){
 
     // Draw
     render(0.0001 * relativeTimestamp);
-
-    console.log('render')
 })
 anim.start();
 // anim.stop();

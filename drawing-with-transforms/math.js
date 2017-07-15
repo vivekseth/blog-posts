@@ -76,9 +76,11 @@ function CGTransformApply(ctx, transform) {
 // Linear Algebra Util
 
 function _multiply(vec, value) {
-    return vec.map(function(e){
-        return value * e;
-    })
+    var out = [];
+    for (var i=0; i<vec.length; i++) {
+        out[i] = vec[i] * value;
+    }
+    return out;
 }
 
 function _mutliplyMatrixVector(matrix, vector) {
@@ -86,21 +88,40 @@ function _mutliplyMatrixVector(matrix, vector) {
         throw 'invalid matrix <> vector combination'
     }
 
-    return matrix.map(function(row){
-        var sum = 0;
+    var out = [];
 
+    for (var r=0; r<matrix.length; r++) {
+        var row = matrix[r];
+        
+        var sum = 0;
         for (var i=0; i<row.length; i++) {
             sum += (row[i] * vector[i]);
         }
+        
+        out[r] = sum;
+    }
 
-        return sum;
-    });
+
+    return out;
+
+
+    // return matrix.map(function(row){
+    //     var sum = 0;
+
+    //     for (var i=0; i<row.length; i++) {
+    //         sum += (row[i] * vector[i]);
+    //     }
+
+    //     return sum;
+    // });
 }
 
 function _divide(vec, value) {
-    return vec.map(function(e){
-        return e / value;
-    })
+    var out = [];
+    for (var i=0; i<vec.length; i++) {
+        out[i] = vec[i] / value;
+    }
+    return out;
 }
 
 function _norm(vec) {
@@ -130,7 +151,7 @@ function _subtract(A, B) {
 function _crossProduct(a, b) {
     // Check lengths
     if (a.length != 3 || b.length != 3) {
-        throw 'length must be 3';
+        throw 'length must be 3: ' + a + ' <> ' + b;
     }
 
     return [
@@ -212,6 +233,7 @@ function _defaultTransformPerspective() {
 
 function Transform3DCamera(position, target, up) {
     var normCameraDirection = _normalize(_subtract(position, target));
+
     var normCameraRight = _normalize(_crossProduct(up, normCameraDirection));
     var normCameraUp = _crossProduct(normCameraDirection, normCameraRight);
     var cameraLocalCoordinateSpaceMatrix = [

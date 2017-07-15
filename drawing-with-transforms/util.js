@@ -219,14 +219,10 @@ function drawParametric3D(ctx, fx, fy, fz, transform, tarr) {
         var point = [x, y, z, 1];
         var transformedPoint = _mutliplyMatrixVector(transform, point);
 
-        // console.log(transformedPoint);
-
         var projPoint = _projectedPoint(transformedPoint);
 
         var newX = projPoint[0];
         var newY = projPoint[1];
-
-        // console.log(newY, newY);
 
         if (i == 0) {
             ctx.moveTo(newX, newY);
