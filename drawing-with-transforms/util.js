@@ -201,9 +201,7 @@ function crossProductArr(A, B) {
 
 // TODO(vivek): Create non-linear range's. 
 
-// Transformation Util
-
-// Transform Util
+// Transformation Util 2D
 
 function CGTransformIdentity() {
     return [1, 0, 0, 1, 0, 0];
@@ -271,6 +269,71 @@ function _matrixMultiply(a, b) {
 
 function CGTransformApply(ctx, transform) {
     ctx.transform.apply(ctx, transform);
+}
+
+// 3D Transform Matrix
+/*matrix_float4x4 matrix_float4x4_translation(vector_float3 t)
+{
+    vector_float4 X = { 1, 0, 0, 0 };
+    vector_float4 Y = { 0, 1, 0, 0 };
+    vector_float4 Z = { 0, 0, 1, 0 };
+    vector_float4 W = { t.x, t.y, t.z, 1 };
+
+    matrix_float4x4 mat = { X, Y, Z, W };
+    return mat;
+}
+*/
+
+function Transform3DTranslation(vec) {
+    var tx = vec.get([0]);
+    var ty = vec.get([1]);
+    var tz = vec.get([2]);
+
+    var X = [1, 0, 0, 0];
+    var Y = [0, 1, 0, 0];
+    var Z = [0, 0, 1, 0];
+    var W = [tx, ty, tz, 1];
+
+    // TODO(vivek): should this be transposed??
+    return math.matrix([X, Y, Z, W]);
+}
+
+function Transform3DPerspective(aspect, fovy, near, far) {
+    var yScale = 1 / Math.tan(fovy * 0.5);
+    var xScale = yScale / aspect;
+    var zRange = far - near;
+    var wzScale = -2 * far * near / zRange;
+    var P = [xScale, 0, 0, 0];
+    var Q = [0, yScale, 0, 0];
+    var R = [0, 0, zRange, -1];
+    var S = [0, 0, wzScale, 0];
+    return math.matrix([P, Q, R, S]);
+}
+
+function _defaultTransformPerspective() {
+    var aspect = canvas.width / canvas.height;
+    var fovy = (2 * Math.PI) / 5.0;
+    var near = 1;
+    var far = 100;
+    return Transform3DPerspective(aspect, fovy, near, far);
+}
+
+function Transform3DCamera(position, target, up) {
+    function _normalize(vec) {
+        return math.divide(vec, math.norm(vec));
+    }
+
+    var normCameraDirection = _normalize(math.subtract(position, target));
+    var normCameraRight = _normalize(math.cross(up, normCameraDirection));
+    var normCameraUp = math.cross(normCameraDirection, normCameraRight);
+    var cameraLocalCoordinateSpaceMatrix = math.matrix([
+        [normCameraRight.get([0]), normCameraUp.get([0]), normCameraDirection.get([0]), 0],
+        [normCameraRight.get([1]), normCameraUp.get([1]), normCameraDirection.get([1]), 0],
+        [normCameraRight.get([2]), normCameraUp.get([2]), normCameraDirection.get([2]), 0],
+        [                       0,                     0,                            0, 1]
+    ]);
+    var cameraTranslationMatrix = Transform3DTranslation(math.matrix.multiply(-1, position));
+    return math.multiply(cameraLocalCoordinateSpaceMatrix, cameraTranslationMatrix);
 }
 
 // Animation Util
