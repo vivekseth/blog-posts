@@ -271,18 +271,13 @@ function CGTransformApply(ctx, transform) {
     ctx.transform.apply(ctx, transform);
 }
 
-// 3D Transform Matrix
-/*matrix_float4x4 matrix_float4x4_translation(vector_float3 t)
-{
-    vector_float4 X = { 1, 0, 0, 0 };
-    vector_float4 Y = { 0, 1, 0, 0 };
-    vector_float4 Z = { 0, 0, 1, 0 };
-    vector_float4 W = { t.x, t.y, t.z, 1 };
-
-    matrix_float4x4 mat = { X, Y, Z, W };
-    return mat;
+function _normalize(vec) {
+    return math.divide(vec, math.norm(vec));
 }
-*/
+
+function Transform3DIdentity() {
+    return math.eye(4)
+}
 
 function Transform3DTranslation(vec) {
     var tx = vec.get([0]);
@@ -319,10 +314,6 @@ function _defaultTransformPerspective() {
 }
 
 function Transform3DCamera(position, target, up) {
-    function _normalize(vec) {
-        return math.divide(vec, math.norm(vec));
-    }
-
     var normCameraDirection = _normalize(math.subtract(position, target));
     var normCameraRight = _normalize(math.cross(up, normCameraDirection));
     var normCameraUp = math.cross(normCameraDirection, normCameraRight);
@@ -484,41 +475,76 @@ function drawCube(ctx, transform) {
     })
 }
 
-function drawCube2(ctx, transform) {
-    function _createCubeLineFuncs() {
-        function _createConstFunc(c) {
-            return function(t) {
-                return c;
-            }
-        }
+function CreateAbstractNode() {
+    var data = {};
+    data.scaleTransform = Transform3DIdentity();
+    data.positionTransform = Transform3DIdentity();
+    data.rotationTransform = Transform3DIdentity();
+    data.draw = function(ctx, projectionFromModel) {
+        
+    }.bind(data);
 
-        function _createIdentity() {
-            return function(t) {
-                return t;
-            }
-        }
+    data.rotate = function(axis, angle) {
+        var axisVec = _normalize(math.matrix(axis));
+        this.rotationTransform = Transform3DRotation(axisVec, angle);
+    }.bind(data);
 
-        function _arrayInsert(arr, index, elem) {
-            var arrCopy = arr.slice();
-            arrCopy.splice(index, 0, elem);
-            return arrCopy;
-        }
+    data.position = function(coordinates) {
+        var coordinatesVec = math.matrix(coordinates);
+        this.positionTransform = Transform3DTranslation(coordinatesVec);
+    }.bind(data);
 
-        var constFuncs = [_createConstFunc(1), _createConstFunc(-1)];
-        var lineDataArray = crossProductArr([0, 1, 2], crossProductArr(constFuncs, constFuncs));
-        return lineDataArray.map(function(lineData) {
-            return _arrayInsert(lineData[1], lineData[0], _createIdentity());
-        });
-    }
-    
-    var lineFuncs = _createCubeLineFuncs();
-    for (var i=0; i<lineFuncs.length; i++) {
-        var fx = lineFuncs[i][0];
-        var fy = lineFuncs[i][1];
-        var fz = lineFuncs[i][2];
-        drawParametric3D(ctx, fx, fy, fz, transform, [-1, 1]);
-    }
+    data.scale = function(factor) {
+        var mat = math.multiply(factor, Transform3DIdentity());
+        mat.set([3,3], 1);
+        this.scaleTransform = mat;
+    }.bind(data);
+
+    data.localTransform = function() {
+        return math.multiply(this.positionTransform, math.multiply(this.rotationTransform, this.scaleTransform));
+    }.bind(data);
+
+    return data;   
 }
+
+function CreateCubeNode() {
+    var data = CreateAbstractNode();
+    data.linePoints = cubeLines();
+    data.draw = function(ctx, projectionFromModel) {
+        var transform = math.multiply(projectionFromModel, this.localTransform());
+        this.linePoints.map(function(points){
+            drawLine3D(ctx, points[0], points[1], transform);
+        })
+    }.bind(data);
+    return data;
+}
+
+function CreateSphereNode(parallels, meridians) {
+    function _drawRing(ctx, radius, ypos, transform) {
+        drawParametric3D(ctx, function(t){
+            return radius * Math.cos(t);
+        }, function(t){
+            return ypos;
+        }, function(t){
+            return radius * Math.sin(t);
+        }, transform, createRange(0, 2 * Math.PI, meridians))
+    }
+
+    var data = CreateAbstractNode();
+    data.draw = function(ctx, projectionFromModel) {
+        var transform = math.multiply(projectionFromModel, this.localTransform());
+        var rows = createRange(-0.9, 0.9, parallels);
+        rows.map(function(r){
+            var angle = Math.acos(r);
+            var radius = Math.sin(angle);
+            _drawRing(ctx, radius, r, transform);
+        });
+    }.bind(data);
+
+    return data;
+}
+
+
 
 
 
@@ -539,6 +565,7 @@ function CreateAnimation(drawFrame) {
 
         var relativeTimestamp = currentTimestamp - animationStart;
         var duration = currentTimestamp - previousTimestamp;
+        previousTimestamp = currentTimestamp;
 
 
         drawFrame(relativeTimestamp, duration);

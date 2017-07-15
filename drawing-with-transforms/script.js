@@ -19,9 +19,58 @@ canvas.style.backgroundColor = '#fff';
 
 var ctx = canvas.getContext("2d");
 
+var ActiveHandlers = {};
+
+function _defaultTransformCamera() {
+    var position = math.matrix([0, 0, 5]);
+    var target = math.matrix([0, 0, 0]);
+    var up = math.matrix([0, 1, 0]);
+    return Transform3DCamera(position, target, up);
+}
+
+function CreateCamera() {
+    var data = {};
+    data.position = math.matrix([0, 0, 5]);
+    data.target = math.matrix([0, 0, 0]);
+    data.up = math.matrix([0, 1, 0]);
+    data.matrix = function() {
+        return Transform3DCamera(this.position, this.target, this.up);
+    }.bind(data);
+
+    data.getPosition = function() {
+        return this.position.toArray();
+    }.bind(data);
+
+    data.setPosition = function(pos) {
+        this.position = math.matrix(pos);
+    }.bind(data);
+
+    data.getTarget = function() {
+        return this.target.toArray();
+    }.bind(data);
+
+    data.setTarget = function(target) {
+        this.target = math.matrix(target);
+    }.bind(data);
+
+    data.getUp = function() {
+        return this.up.toArray();
+    }.bind(data);
+
+     data.setUp = function(up) {
+        this.up = math.matrix(up);
+    }.bind(data);
+
+    return data;
+}
+
+var Camera = CreateCamera();
 
 
-
+var cube = CreateCubeNode()
+var cube2 = CreateCubeNode();
+var cube3 = CreateCubeNode();
+var cube4 = CreateCubeNode();
 
 function render(t) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -31,22 +80,27 @@ function render(t) {
         CGTransformApply(ctx, trans);
         ctx.save();
             // Draw stuff
-
             var projectionFromCamera = _defaultTransformPerspective();
-            var cameraFromWorld = _defaultTransformCamera();
-            var worldFromModel = Transform3DRotation(math.matrix([0, 1, 0]), 2 * Math.PI * t);
+            var cameraFromWorld = Camera.matrix();
+            var worldFromModel = Transform3DIdentity(); // Rotation(math.matrix([0, 1, 0]), Math.PI * t);
             var projectionFromModel = math.multiply(math.multiply(projectionFromCamera, cameraFromWorld), worldFromModel);
 
-            ctx.lineWidth = 0.001;
-            drawParametric3D(ctx, function(t){
-                return 1.0 * Math.cos(t);
-            }, function(t){
-                return 1.0 * Math.sin(t);
-            }, function(t){
-                return 0;
-            }, projectionFromModel, createRange(0, 2 * Math.PI, 10))
+            ctx.lineWidth = 0.0025;
+            
+            cube.rotate([0, 1, 0], Math.PI * t);
+            cube.draw(ctx, projectionFromModel);
+            
+            cube2.rotate([0, 1, 1], 2 * Math.PI * t);
+            cube2.scale(0.7);
+            cube2.draw(ctx, projectionFromModel);
 
-            drawCube(ctx, projectionFromModel);
+            cube3.rotate([1, 0, 1], 4 * Math.PI * t);
+            cube3.scale(0.49);
+            cube3.draw(ctx, projectionFromModel);
+
+            cube4.rotate([1, 1, 0], 8 * Math.PI * t);
+            cube4.scale(.343);
+            cube4.draw(ctx, projectionFromModel);
 
         ctx.restore();
     ctx.restore();
@@ -54,12 +108,74 @@ function render(t) {
 
 
 var anim = CreateAnimation(function(relativeTimestamp, duration){
+    // Handle user input
+    for (handler in ActiveHandlers) {
+        ActiveHandlers[handler](relativeTimestamp, duration);
+    }
+
+    // Draw
     render(0.0001 * relativeTimestamp);
 })
 anim.start();
-// anim.stop();
 
 
+document.addEventListener('keydown', function (event) {
+    var f = handlerForKey(event.key);
+    if (f) {
+        ActiveHandlers[event.key] = f;
+    }
+}, false);
+
+document.addEventListener('keyup', function (event) {
+  if (event.key in ActiveHandlers) {
+    delete ActiveHandlers[event.key];
+  }
+}, false);
+
+function handlerForKey(key) {
+    var dict = {
+        'ArrowUp' : function (timestamp, duration) {
+            var pos = Camera.getPosition();
+            pos[2] += (duration * -0.01);
+            Camera.setPosition(pos);
+
+            var target = Camera.getTarget();
+            target[2] += (duration * -0.01);
+            Camera.setTarget(target);
+        },
+        
+        'ArrowDown' : function (timestamp, duration) {
+            var pos = Camera.getPosition();
+            pos[2] += duration * 0.01;
+            Camera.setPosition(pos);
+
+            var target = Camera.getTarget();
+            target[2] += (duration * 0.01);
+            Camera.setTarget(target);
+        },
+
+        'ArrowLeft' : function (timestamp, duration) {
+            var pos = Camera.getPosition();
+            pos[0] += (duration * -0.01);
+            Camera.setPosition(pos);
+
+            var target = Camera.getTarget();
+            target[0] += (duration * -0.01);
+            Camera.setTarget(target);
+        },
+
+        'ArrowRight' : function (timestamp, duration) {
+            var pos = Camera.getPosition();
+            pos[0] += (duration * 0.01);
+            Camera.setPosition(pos);
+
+            var target = Camera.getTarget();
+            target[0] += (duration * 0.01);
+            Camera.setTarget(target);
+        },
+    };
+    return dict[key];
+}
 
 
 
