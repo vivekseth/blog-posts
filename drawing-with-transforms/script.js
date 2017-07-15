@@ -67,10 +67,18 @@ function CreateCamera() {
 var Camera = CreateCamera();
 
 
-var cube = CreateCubeNode()
-var cube2 = CreateCubeNode();
-var cube3 = CreateCubeNode();
-var cube4 = CreateCubeNode();
+// var cube = CreateCubeNode()
+// var cube2 = CreateCubeNode();
+// var cube3 = CreateCubeNode();
+// var cube4 = CreateCubeNode();
+
+var cubes = (function(n){
+    var arr = []
+    for (var i=0; i<n; i++) {
+        arr.push(CreateCubeNode());
+    }
+    return arr;
+})(100);
 
 function render(t) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -82,25 +90,18 @@ function render(t) {
             // Draw stuff
             var projectionFromCamera = _defaultTransformPerspective();
             var cameraFromWorld = Camera.matrix();
-            var worldFromModel = Transform3DIdentity(); // Rotation(math.matrix([0, 1, 0]), Math.PI * t);
+            var worldFromModel = Transform3DRotation(math.matrix([0, 1, 0]), Math.PI * t);
             var projectionFromModel = math.multiply(math.multiply(projectionFromCamera, cameraFromWorld), worldFromModel);
 
             ctx.lineWidth = 0.0025;
-            
-            cube.rotate([0, 1, 0], Math.PI * t);
-            cube.draw(ctx, projectionFromModel);
-            
-            cube2.rotate([0, 1, 1], 2 * Math.PI * t);
-            cube2.scale(0.7);
-            cube2.draw(ctx, projectionFromModel);
 
-            cube3.rotate([1, 0, 1], 4 * Math.PI * t);
-            cube3.scale(0.49);
-            cube3.draw(ctx, projectionFromModel);
-
-            cube4.rotate([1, 1, 0], 8 * Math.PI * t);
-            cube4.scale(.343);
-            cube4.draw(ctx, projectionFromModel);
+            var size = 1.0;
+            
+            for (var i = 0; i < cubes.length; i++) {
+                var c = cubes[i];
+                c.scale(size - i * 0.01);
+                c.draw(ctx, projectionFromModel);
+            }
 
         ctx.restore();
     ctx.restore();
