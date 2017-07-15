@@ -5,8 +5,7 @@ var DIM_Y = 1;
 var DIM_Z = 2;
 var DIM_W = 3;
 
-
-// TOOD(vivek): move all draw primitives out to separate file. 
+// TOOD(vivek): move all drawing primitives out to separate file. 
 
 /// Draw Path
 
@@ -259,8 +258,6 @@ function drawParametric3D(ctx, fx, fy, fz, transform, tarr) {
     ctx.stroke();
 }
 
-var i = 0;
-
 function drawLine3D(ctx, p1, p2, transform) {
     var p1Copy = p1.slice();
     var p2Copy = p2.slice();
@@ -270,14 +267,9 @@ function drawLine3D(ctx, p1, p2, transform) {
 
     var tp1 = _mutliplyMatrixVector(transform, p1Copy);
     var tp2 = _mutliplyMatrixVector(transform, p2Copy);
-    if ((i++) % 30 == 0) {
-        console.log(tp1);
-    }
-
     if (tp1[DIM_W] <= 0 || tp2[DIM_W] <= 0) {
         return;
     }
-
 
     var projPoint1 = _projectedPoint(tp1);
     var projPoint2 = _projectedPoint(tp2);
@@ -393,7 +385,6 @@ function CreateSphereNode(parallels, meridians) {
     return data;
 }
 
-
 // Animation Util
 
 function CreateAnimation(drawFrame) {
@@ -438,3 +429,48 @@ function CreateAnimation(drawFrame) {
 
 // Renaming constructor to make more sense for a game
 var CreateRunLoop = CreateAnimation;
+
+function CreateCamera() {
+    var data = {};
+    data.position = [0, 0, -5];
+    data.target = [0, 0, 0];
+    data.up = [0, 1, 0];
+    data.pitch = 0;
+    data.yaw = Math.PI / 2.0;
+
+    function _method(obj, func) {
+        return func.bind(obj);
+    }
+
+    data.matrix = function() {
+        return Transform3DCamera(this.position, this.target, this.up);
+    }.bind(data);
+
+    data.front = _method(data, function() {
+        return _normalize(_subtract(this.target, this.position));
+    });
+
+    data.setFront = _method(data, function(front) {
+        this.target = _add(this.position, _normalize(front));
+    });
+
+    data.setYaw = _method(data, function(yaw){
+        this.yaw = yaw;
+        this.updateFrontWithAngles();
+    })
+
+    data.setPitch = _method(data, function(pitch){
+        this.pitch = pitch;
+        this.updateFrontWithAngles();
+    })
+
+    data.updateFrontWithAngles = _method(data, function(){
+        var front = [];
+        front[0] = Math.cos(this.yaw) * Math.cos(this.pitch);
+        front[1] = Math.sin(this.pitch)
+        front[2] = Math.sin(this.yaw) * Math.cos(this.pitch);
+        this.setFront(front);
+    })
+
+    return data;
+}

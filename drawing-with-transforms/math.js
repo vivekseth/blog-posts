@@ -47,6 +47,20 @@ function _transformFromMatrix(m) {
     return [a, b, c, d, e, f];
 }
 
+function CGTransformApply(ctx, transform) {
+    ctx.transform.apply(ctx, transform);
+}
+
+// Linear Algebra Util
+
+function _multiply(vec, value) {
+    var out = [];
+    for (var i=0; i<vec.length; i++) {
+        out[i] = vec[i] * value;
+    }
+    return out;
+}
+
 // return A * B
 function _matrixMultiply(a, b) {
     var aNumRows = a.length
@@ -69,20 +83,6 @@ function _matrixMultiply(a, b) {
     return m;
 }
 
-function CGTransformApply(ctx, transform) {
-    ctx.transform.apply(ctx, transform);
-}
-
-// Linear Algebra Util
-
-function _multiply(vec, value) {
-    var out = [];
-    for (var i=0; i<vec.length; i++) {
-        out[i] = vec[i] * value;
-    }
-    return out;
-}
-
 function _mutliplyMatrixVector(matrix, vector) {
     if (matrix[0].length != vector.length) {
         throw 'invalid matrix <> vector combination'
@@ -101,19 +101,7 @@ function _mutliplyMatrixVector(matrix, vector) {
         out[r] = sum;
     }
 
-
     return out;
-
-
-    // return matrix.map(function(row){
-    //     var sum = 0;
-
-    //     for (var i=0; i<row.length; i++) {
-    //         sum += (row[i] * vector[i]);
-    //     }
-
-    //     return sum;
-    // });
 }
 
 function _divide(vec, value) {
