@@ -75,24 +75,20 @@ function drawPolar(ctx, fth, tr, tarr) {
 }
 
 function drawParametric3D(ctx, fx, fy, fz, transform, tarr) {
-    function center(coordinate, dimensionLength) {
-        return (coordinate + 0.5) * dimensionLength;
-    }
-
-    var first = true;
-
     ctx.beginPath();
     for (var i=0; i<tarr.length; i++) {
         var x = fx(tarr[i]);
         var y = fy(tarr[i]);
         var z = fz(tarr[i]);
 
-        var px = center(x/z, WIDTH);
-        var py = center(y/z, HEIGHT);
+        var point = math.matrix([x, y, z, 1]);
+        var tPoint = math.multiply(transform, point);
 
-        if (first) {
+        var px = tPoint.get([0]) / tPoint.get([3]);
+        var py = tPoint.get([1]) / tPoint.get([3]);
+
+        if (i == 0) {
             ctx.moveTo(px, py);
-            first = false;
         }
         else {
             ctx.lineTo(px, py);
@@ -101,17 +97,193 @@ function drawParametric3D(ctx, fx, fy, fz, transform, tarr) {
     ctx.stroke();
 }
 
-drawParametric3D(ctx, function(t){
-    return 1 * Math.cos(t);
-}, function(t){
-    return -1;
-}, function(t){
-    return 1 * Math.sin(t) + 3;
-}, null, range(0, 2*Math.PI, 100))
+function _matrix3x3ToTransform2D(mat) {
+    var a = mat.get([0, 0]);
+    var b = mat.get([1, 0]);
+    var c = mat.get([0, 1]);
+    var d = mat.get([1, 1]);
+    var e = mat.get([0, 2]);
+    var f = mat.get([1, 2]);
+    return [a, b, c, d, e, f];
+}
+
+function _transform2DToMatrix3x3(transform) {
+    var mat = math.eye(3);
+
+    mat.set([0, 0], transform[0]);
+    mat.set([1, 0], transform[1]);
+    mat.set([0, 1], transform[2]);
+    mat.set([1, 1], transform[3]);
+    mat.set([0, 2], transform[4]);
+    mat.set([1, 2], transform[5]);
+
+    return mat;
+}
+
+function Transform2DTranslate(x, y) {
+    var mat = math.eye(3);
+
+    mat.set([0, 2], x);
+    mat.set([1, 2], y);
+
+    return mat;
+}
+
+function Transform2DScale(sx, sy) {
+    var mat = math.eye(3);
+
+    mat.set([0, 0], sx);
+    mat.set([1, 1], sy);
+
+    return mat;
+}
+
+function Transform2DRotate(angle) {
+    var mat = math.eye(3);
+
+    mat.set([0, 0], Math.cos(angle));
+    mat.set([1, 0], Math.sin(angle));
+    mat.set([0, 1], -Math.sin(angle));
+    mat.set([1, 1], Math.cos(angle));
+
+    return mat;
+}
+
+
+function Transform3DTranslate(vec) {
+    var mat = math.eye(4);
+
+    mat.set([0, 3], vec.get([0]));
+    mat.set([1, 3], vec.get([1]));
+    mat.set([2, 3], vec.get([2]));
+
+    return mat;
+}
+
+
+// aspect = drawableSize.width / drawableSize.height;
+// const float fov = (2 * M_PI) / 5;
+// const float near = 1;
+// const float far = 100;
+function Transform3DPerspective(fovy, aspect, zNear, zFar) {
+    var mat = math.matrix(math.zeros([4, 4]));
+
+    var a = fovy / aspect;
+    var b = fovy;
+    var c = (zFar + zNear) / (zNear - zFar);
+    var d = (2 * zFar * zNear) / (zNear - zFar);
+    var e = -1;
+
+    mat.set([0, 0], a);
+    mat.set([1, 1], b);
+    mat.set([2, 2], c);
+    mat.set([2, 3], d);
+    mat.set([3, 2], e);
+
+    return mat;
+}
+
+function _defaultTransformPerspective() {
+    var fov = Math.PI * 2 / 5.0;
+    var aspect = canvas.width / canvas.height;
+    var near = 1;
+    var far = 100;
+    return Transform3DPerspective(fov, aspect, near, far);
+}
+
+
+function Transform3DCamera(position, target, up) {
+    function _normalize(vec) {
+        return math.divide(vec, math.norm(vec));
+    }
+
+    var normCameraDirection = _normalize(math.subtract(position, target));
+    var normCameraRight =  _normalize(math.cross(up, normCameraDirection));
+    var normCameraUp = math.cross(normCameraDirection, normCameraRight);
+
+    // TODO(vivek): might need to transpose this!
+    var data = [
+        [normCameraRight.get([0]), normCameraUp.get([0]), normCameraDirection.get([0]), 0],
+        [normCameraRight.get([1]), normCameraUp.get([1]), normCameraDirection.get([1]), 0],
+        [normCameraRight.get([2]), normCameraUp.get([2]), normCameraDirection.get([2]), 0],
+        [                       0,                     0,                            0, 1]
+    ];
+    var cameraLocalCoordinateSpaceMatrix = math.matrix(data);
+    var cameraTranslationMatrix = Transform3DTranslate(math.multiply(-1.0, position));
+    return math.multiply(cameraLocalCoordinateSpaceMatrix, cameraTranslationMatrix);
+}
+
+function _defaultCameraMatrix() {
+    var position = math.matrix([0.5, 0, -5]);
+    var target = math.matrix([0, 0, 0]);
+    var up = math.matrix([0, 1, 0]);
+    return Transform3DCamera(position, target, up);
+}
+
+var viewFromWorld = _defaultCameraMatrix();
+var projectionFromView = _defaultTransformPerspective();
+var projectionFromWorld = math.multiply(projectionFromView, viewFromWorld);
 
 
 
 
+ctx.applyTransform = function(mat) {
+    var trans = _matrix3x3ToTransform2D(mat);
+    this.transform.apply(this, trans);
+    return this;
+}.bind(ctx);
+
+ctx.applyTransform(Transform2DScale(WIDTH, HEIGHT));
+ctx.applyTransform(Transform2DTranslate(0.5, 0.5));
+
+// ctx.lineWidth = (1 / WIDTH) * 0.5;
+// drawParametric3D(ctx, function(t){
+//     return 1 * Math.cos(t);
+// }, function(t){
+//     return 1 * Math.sin(t);
+// }, function(t){
+//     return 0;
+// }, math.multiply(projectionFromView, viewFromWorld), range(0, 2*Math.PI, 100))
+
+
+function drawCircle3D(radius, projectionFromWorld, worldFromModel) {
+    ctx.lineWidth = (1 / WIDTH) * 0.5;
+    drawParametric3D(ctx, function(t){
+        return radius * Math.cos(t);
+    }, function(t){
+        return radius * Math.sin(t);
+    }, function(t){
+        return 0;
+    }, math.multiply(projectionFromWorld, worldFromModel), range(0, 2*Math.PI, 100))
+}
+
+// drawCircle3D(1, projectionFromWorld, Transform3DTranslate(math.matrix([0, 0, 0])));
+// drawCircle3D(1, projectionFromWorld, Transform3DTranslate(math.matrix([0, 0, 1])));
+// drawCircle3D(1, projectionFromWorld, Transform3DTranslate(math.matrix([0, 0, 2])));
+// drawCircle3D(1, projectionFromWorld, Transform3DTranslate(math.matrix([0, 0, 3])));
+
+
+for (var i=0; i<10; i++) {
+    drawCircle3D(1, projectionFromWorld, Transform3DTranslate(math.matrix([0, 0, i])));    
+}
+
+
+
+// var addMethod = function(obj, method, func) {
+//     obj[method] = func.bind(obj);
+// }
+
+// addMethod(ctx, 'applyTransform', function(mat){
+//     var trans = _matrix3x3ToTransform2D(mat);
+//     this.transform.apply(this, trans);
+//     return this;
+// })
+
+// var applyTransform = function(mat) {
+//     var trans = _matrix3x3ToTransform2D(mat);
+//     this.transform.apply(this, trans);
+//     return this;
+// }.bind(ctx);
 
 
 
