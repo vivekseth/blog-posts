@@ -228,8 +228,9 @@ function normalizedCos(t) {
 // Draw 3D
 
 function _projectedPoint(point) {
-    var x = point[0] / point[3];
-    var y = point[1] / point[3];
+    var f = 20;
+    var x = point[DIM_X] / Math.pow(point[DIM_W], f);
+    var y = point[DIM_Y] / Math.pow(point[DIM_W], f);
     return [x, y];
 }
 
@@ -470,6 +471,19 @@ function CreateCamera() {
         front[1] = Math.sin(this.pitch)
         front[2] = Math.sin(this.yaw) * Math.cos(this.pitch);
         this.setFront(front);
+    })
+
+    data.yawTurn = _method(data, function(angle){
+        this.setYaw(this.yaw + angle)
+        this.updateFrontWithAngles();
+    });
+
+    data.move = _method(data, function(speed){
+        var front = this.front();
+        var pos = this.position.slice();
+        pos = _add(pos, _multiply(front, speed));
+        this.position = pos;
+        this.updateFrontWithAngles();
     })
 
     return data;

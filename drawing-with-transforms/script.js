@@ -28,13 +28,13 @@ var cubes = (function(L, W, H){
         for (var j=0; j<W; j++) {
             for (var k=0; k<H; k++) {
                 var cube = CreateCubeNode();
-                cube.position([i, k - 0.5 * H, j])
+                cube.position([i - 0.5 * (L - 1), k - 0.5 * (H - 1), j])
                 arr.push(cube);
             }
         }
     }
     return arr;
-})(5, 5, 5);
+})(2, 15, 2);
 
 
 function handleInput(timestamp, duration) {
@@ -97,31 +97,19 @@ document.addEventListener('keyup', function (event) {
 function handlerForKey(key) {
     var dict = {
         'ArrowUp' : function (timestamp, duration) {
-            var front = Camera.front();
-            var pos = Camera.position.slice();
-            pos = _add(pos, _multiply(front, duration * 0.01));
-            Camera.position = pos;
-            Camera.updateFrontWithAngles();
+            Camera.move(duration * 0.001);
         },
         
         'ArrowDown' : function (timestamp, duration) {
-            var front = Camera.front();
-            var pos = Camera.position.slice();
-            pos = _add(pos, _multiply(front, duration * -0.01));
-            Camera.position = pos;
-            Camera.updateFrontWithAngles();
+            Camera.move(duration * -0.001);
         },
 
         'ArrowLeft' : function (timestamp, duration) {
-            var yaw = Camera.yaw;
-            Camera.setYaw(yaw -= duration * 0.001)
-            Camera.updateFrontWithAngles();
+            Camera.yawTurn(duration * -0.001)
         },
 
         'ArrowRight' : function (timestamp, duration) {
-            var yaw = Camera.yaw;
-            Camera.setYaw(yaw += duration * 0.001)
-            Camera.updateFrontWithAngles();
+            Camera.yawTurn(duration * 0.001)
         },
     };
     return dict[key];
