@@ -314,6 +314,8 @@ function CreateAnimation(drawFrame) {
     }
 }
 
+var CreateRunLoop = CreateAnimation;
+
 // Interpolation 
 
 function interpolateValue(A, B) {

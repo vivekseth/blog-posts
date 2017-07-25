@@ -19,123 +19,237 @@ canvas.style.backgroundColor = '#000';
 
 var ctx = canvas.getContext("2d");
 
-var fromAngle = 0;
-var toAngle = 0.3333 * Math.PI;
+//5,6,7, 9
+var SPACE = 10;
 
-var fx = interpolateFunc(function (u, v) {
-    return u
-}, function(u, v) {
-    return u + 0.1 * Math.sin(v * 2 * 2 * Math.PI);
-})
+ctx.drawPixel = function(pos, color) {
+    var x = pos[0];
+    var y = pos[1];
 
-var fy = interpolateFunc(function (u, v) {
-    return v;
-}, function(u, v) {
-    return v;
-})
+    var r = Math.floor(255 * color[0]);
+    var g = Math.floor(255 * color[1]);
+    var b = Math.floor(255 * color[2]);
+    var a = color[3];
 
-var _t = 0;
-var _xStep = 10;
-var _yStep = 10;
+    this.fillStyle = "rgba("+r+","+g+","+b+","+(a)+")";
+    this.fillRect( x, y, 1, 1 );
+}.bind(ctx);
 
-var _range = 1;
+ctx.drawBox = function(pos, color, size) {
+    var x = pos[0];
+    var y = pos[1];
 
-function render(t, xStep, yStep, range) {
+    var r = Math.floor(255 * color[0]);
+    var g = Math.floor(255 * color[1]);
+    var b = Math.floor(255 * color[2]);
+    var a = color[3];
+
+    this.fillStyle = "rgba("+r+","+g+","+b+","+(a)+")";
+    this.fillRect( x - 0.5 * size, y - 0.5 * size, size, size );
+}.bind(ctx);
+
+
+function blobFunc(pixel, pos, r) {
+    var x = (pixel[0] - pos[0]) / r;
+    var y = (pixel[1] - pos[1]) / r;
+    return 1 / ((x * x) + (y * y) + 1);
+}
+
+function shadeCanvas(ctx, callback) {
+    shadeCanvasRect(ctx, 0, 0, WIDTH, HEIGHT, callback);
+}
+
+function shadeCanvasRect(ctx, minX, minY, width, height, callback) {
+    var c = 0;
+    for (var x=minX; x<(minX + width); x++) {
+        for (var y=minY; y<(minY + height); y++) {
+            var pixel = [x, y]
+            var color = callback(pixel);
+            ctx.drawPixel(pixel, color);
+            c += 1;
+
+            if ((x - minX) * (y - minY) > (SPACE * SPACE)) {
+                throw c + 'ERROR';
+            }
+        }
+    }
+}
+
+function shadeCanvasSpaced(ctx, space, callback) {
+    for (var x=0; x<WIDTH; x+=space) {
+        for (var y=0; y<HEIGHT; y+=space) {
+            var pixel = [x + space*0.5, y+ space*0.5]
+            var color = callback(pixel, [x, y]);
+            ctx.drawBox(pixel, color, space);
+        }
+    }
+}
+
+function CreateBlob(pos, radius) {
+    var b = {};
+    b.position = pos;
+    b.radius = radius;
+    b.value = function(pixel) {
+        return blobFunc(pixel, this.position, this.radius);
+    }.bind(b);
+    return b;
+}
+
+var PrevMousePosition = {};
+
+var MousePosition = {};
+MousePosition.x = 0;
+MousePosition.y = 0;
+
+function CreateGrid(W, H) {
+    var grid = [];
+
+    for (var w=0; w<W; w++) {
+        grid.push([])
+        var col = grid[w];
+        for (var h=0; h<H; h++) {
+            col.push(false);
+        }
+    }    
+
+    return grid;
+}
+
+function edgeCoordinates(grid) {
+    var W = grid.length;
+    var H = grid[0].length;
+
+    function _safeGet(grid, i, j) {
+        if (i < 0 || j < 0 || i >= W || j>=H) {
+            var iBounded = Math.max(Math.min(i, W-1), 0);
+            var jBounded = Math.max(Math.min(j, H-1), 0);
+            return grid[iBounded][jBounded]
+        }
+        else {
+            return grid[i][j]
+        }
+    }
+
+    function _isEdge(grid, i, j) {
+        var start = _safeGet(grid, i, j);
+
+        if (_safeGet(grid, i-1, j) == !start) {
+            return true;
+        }
+        else if (_safeGet(grid, i+1, j) == !start) {
+            return true;
+        }
+        else if (_safeGet(grid, i, j-1) == !start) {
+            return true;
+        }
+        else if (_safeGet(grid, i, j+1) == !start) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    var coords = [];
+
+    for (var w = 0; w < W; w++) {
+        for (var h = 0; h < H; h++) {
+            if (_isEdge(grid, w, h)) {
+                coords.push([w, h]);
+            }
+        }
+    }
+
+    return coords;
+}
+
+var blobShader = function(blobs, pixel) {
+    var val = 0;
+    for (var i=0; i<blobs.length; i++) {
+        var b = blobs[i];
+        val += b.value(pixel);
+    }
+
+    if (val < 0.5) {
+        return false;
+    }
+    else {
+        return true;
+    }
+}
+
+function render(t, d) {
+    if (MousePosition.x == PrevMousePosition.x && MousePosition.y == PrevMousePosition.y) {
+        return;
+    }
+
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
-        var trans = CGTransformConcat(CGTransformScale(WIDTH, HEIGHT), CGTransformTranslate(0.5, 0.5));
-        CGTransformApply(ctx, trans);
-        ctx.save();
-            ctx.fillStyle = 'rgba(255,255,255,0.2)';
-            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-            ctx.lineWidth=0.003;
-            drawField(ctx, fx(t), fy(t), function(t, u) {
-                return 0.005;
-            }, createRange(-0.5 * range, 0.5 * range, xStep * range), createRange(-0.5 * range, 0.5 * range, yStep * range))
-        ctx.restore();
-    ctx.restore();
-}
 
-function globalRender() {
-    render(_t, _xStep, _yStep, _range);
-}
-globalRender();
+    var blobs = [
+        CreateBlob([200, 200], 50),
+        CreateBlob([400, 400], 100),
+        CreateBlob([MousePosition.x, MousePosition.y], 50)
+    ];
 
-// var anim = CreateAnimation(function(curr, duration) {
-//     var osc = oscillation(-0.1, 0.1, 5000);
-//     render(osc(curr));
-// });
-// anim.start();
+    var coarseGrid = CreateGrid(Math.ceil(WIDTH / SPACE), Math.ceil(HEIGHT / SPACE));
 
-var CurrentInputID = -1;
-function createSlider(options, handler, labelString) {
-    var input = document.createElement('input');
-    for (prop in options) {
-        input[prop] = options[prop];
+    shadeCanvasSpaced(ctx, SPACE, function(pixel, gridCoord) {
+        if (blobShader(blobs, pixel)) {
+            coarseGrid[gridCoord[0] / SPACE][gridCoord[1] / SPACE] = true;
+            return [0, 0, 0, 1];
+        }
+        else {
+            return [1, 1, 1, 1];
+        }
+    });
+
+    var edgeCoords = edgeCoordinates(coarseGrid);
+    var edgeGrid = CreateGrid(Math.ceil(WIDTH / SPACE), Math.ceil(HEIGHT / SPACE));
+
+    for (var i = 0; i < edgeCoords.length; i++) {
+        var edge = edgeCoords[i];
+    
+        shadeCanvasRect(ctx, 
+            edge[0] * SPACE, 
+            edge[1] * SPACE, 
+            SPACE, 
+            SPACE, 
+            function(pixel){
+            if (blobShader(blobs, pixel)) {
+                return [0, 0, 0, 1];
+            }
+            else {
+                return [1, 1, 1, 1];
+            }
+        })
+
+        // var boxCenter = [0, 0];
+        // boxCenter[0] = (edge[0] + 0.5) * SPACE;
+        // boxCenter[1] = (edge[1] + 0.5) * SPACE;
+        // ctx.drawBox(boxCenter, [1, 0, 0, 0.3], SPACE);
     }
-    input.type = 'range';
+        
+    ctx.restore();
 
-
-    CurrentInputID += 1;
-    input.name = 'input_' + CurrentInputID;
-    var label = document.createElement('label');
-    label.for = input.name;
-    label.textContent = labelString;
-
-    var value = document.createElement('span');
-    value.id = 'value_' + input.name;
-    value.textContent = options.value;
-
-    input.addEventListener('input', function(event) {
-        value.textContent = event.target.valueAsNumber;
-        handler(event.target.valueAsNumber);
-    }, false);
-
-    var span = document.createElement('span');
-    span.appendChild(label);
-    span.appendChild(input);
-    span.appendChild(value);
-    span.style.display = 'block'
-
-    return span;
+    PrevMousePosition = MousePosition;
 }
 
-document.body.appendChild(createSlider({
-    'min': 0, 
-    'max': 1, 
-    'step': 0.0001, 
-    'value': 0
-}, function(t) {
-    _t = t;
-    globalRender();
-}, 't: '));
+var runloop = CreateRunLoop(render);
+runloop.start();
+// runloop.stop();
 
-document.body.appendChild(createSlider({
-    'min': 5, 
-    'max': 15, 
-    'step': 1, 
-    'value': 10
-}, function(xStep) {
-    _xStep = xStep;
-    globalRender();
-}, 'xStep: '));
 
-document.body.appendChild(createSlider({
-    'min': 5, 
-    'max': 15, 
-    'step': 1, 
-    'value': 10
-}, function(yStep) {
-    _yStep = yStep;
-    globalRender();
-}, 'yStep: '));
+function getMousePos(canvas, evt) {
+    var rect = canvas.getBoundingClientRect();
+    return {
+        x: evt.clientX - rect.left,
+        y: evt.clientY - rect.top
+    };
+}
 
-document.body.appendChild(createSlider({
-    'min': 0.2, 
-    'max': 6, 
-    'step': 0.01, 
-    'value': 1
-}, function(range) {
-    _range = range;
-    globalRender();
-}, 'range: '));
+canvas.addEventListener('mousemove', function(evt) {
+    MousePosition = getMousePos(canvas, evt);
+}, false);
+
