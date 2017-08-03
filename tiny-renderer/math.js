@@ -1,6 +1,3 @@
-var HEIGHT = 600;
-var WIDTH = 600;
-
 // Transformation Util 2D
 
 function CGTransformIdentity() {
@@ -48,6 +45,30 @@ function _transformFromMatrix(m) {
     var e = m[0][2];
     var f = m[1][2];
     return [a, b, c, d, e, f];
+}
+
+function _matrixInvert(mat) {
+    function m(x, y) {
+        return mat[x][y];
+    }
+
+    // computes the inverse of a matrix m
+    var det = m(0, 0) * (m(1, 1) * m(2, 2) - m(2, 1) * m(1, 2)) -
+              m(0, 1) * (m(1, 0) * m(2, 2) - m(1, 2) * m(2, 0)) +
+              m(0, 2) * (m(1, 0) * m(2, 1) - m(1, 1) * m(2, 0));
+
+    var invdet = 1 / det;
+
+    var minv = _matrixFromTransform(CGTransformIdentity()); // inverse of matrix m
+    minv[0][0] = (m(1, 1) * m(2, 2) - m(2, 1) * m(1, 2)) * invdet;
+    minv[0][1] = (m(0, 2) * m(2, 1) - m(0, 1) * m(2, 2)) * invdet;
+    minv[0][2] = (m(0, 1) * m(1, 2) - m(0, 2) * m(1, 1)) * invdet;
+    minv[1][0] = (m(1, 2) * m(2, 0) - m(1, 0) * m(2, 2)) * invdet;
+    minv[1][1] = (m(0, 0) * m(2, 2) - m(0, 2) * m(2, 0)) * invdet;
+    minv[1][2] = (m(1, 0) * m(0, 2) - m(0, 0) * m(1, 2)) * invdet;
+    minv[2][0] = (m(1, 0) * m(2, 1) - m(2, 0) * m(1, 1)) * invdet;
+    minv[2][1] = (m(2, 0) * m(0, 1) - m(0, 0) * m(2, 1)) * invdet;
+    minv[2][2] = (m(0, 0) * m(1, 1) - m(1, 0) * m(0, 1)) * invdet;
 }
 
 function CGTransformApply(ctx, transform) {

@@ -1,9 +1,11 @@
 // Draw 3D
 
 function _projectedPoint(point) {
-    var x = point[0] / point[3];
-    var y = point[1] / point[3];
-    return [x, y];
+    var x = point[DIM_X] / point[DIM_W];
+    var y = point[DIM_Y] / point[DIM_W];
+    var z = point[DIM_Z] / point[DIM_W];
+    var w = 1;
+    return [x, y, z, w];
 }
 
 function drawParametric3D(ctx, fx, fy, fz, transform, tarr) {
@@ -160,43 +162,6 @@ function CreateSphereNode(parallels, meridians) {
 
 // ------------
 
-function barycentric(points, P) {
-    var v0 = _subtract(points[1], points[0]); 
-    var v1 = _subtract(points[2], points[0]); 
-    var v2 = _subtract(P, points[0]); 
-    var d00 = _dotProduct(v0, v0);
-    var d01 = _dotProduct(v0, v1);
-    var d11 = _dotProduct(v1, v1);
-    var d20 = _dotProduct(v2, v0);
-    var d21 = _dotProduct(v2, v1);
-    var denom = d00 * d11 - d01 * d01;
-    v = (d11 * d20 - d01 * d21) / denom;
-    w = (d00 * d21 - d01 * d20) / denom;
-    u = 1.0 - v - w;
-    return [u, v, w];
-}
- 
-function _rangeForDimension(points, dim) {
-    var min = null;
-    var max = null;
-    for (var i=0; i<points.length; i++) {
-        if (min == null || points[i][dim] < min) {
-            min = points[i][dim];
-        }
-        
-        if (max == null || points[i][dim] > min) {
-            max = points[i][dim];
-        }
-    }
-    return [min, max];
-}
-
-function _boundingBox(face) {
-    var xRange = _rangeForDimension(face, DIM_X);
-    var yRange = _rangeForDimension(face, DIM_Y);
-    return [xRange, yRange];
-}
-
 function CreateShaderPipeline(vertexShader, fragmentShader) {
     
     // face: array of 3 output vertices
@@ -220,19 +185,69 @@ function CreateShaderPipeline(vertexShader, fragmentShader) {
         return out;
     }
 
+    function _rangeForDimension(points, dim) {
+        var min = null;
+        var max = null;
+        for (var i=0; i<points.length; i++) {
+            if (min == null || points[i][dim] < min) {
+                min = points[i][dim];
+            }
+            
+            if (max == null || points[i][dim] > min) {
+                max = points[i][dim];
+            }
+        }
+        return [min, max];
+    }
+
+    function _boundingBox(face) {
+        var xRange = _rangeForDimension(face, DIM_X);
+        var yRange = _rangeForDimension(face, DIM_Y);
+        return [xRange, yRange];
+    }
+
+    function _barycentric(points, P) {
+        var v0 = _subtract(points[1], points[0]); 
+        var v1 = _subtract(points[2], points[0]); 
+        var v2 = _subtract(P, points[0]); 
+        var d00 = _dotProduct(v0, v0);
+        var d01 = _dotProduct(v0, v1);
+        var d11 = _dotProduct(v1, v1);
+        var d20 = _dotProduct(v2, v0);
+        var d21 = _dotProduct(v2, v1);
+        var denom = d00 * d11 - d01 * d01;
+        v = (d11 * d20 - d01 * d21) / denom;
+        w = (d00 * d21 - d01 * d20) / denom;
+        u = 1.0 - v - w;
+        return [u, v, w];
+    }
+
     // face: array of 3 output vertices
-    function _iterateFragmentsForFace(face, callback) {
+    function _iterateFragmentsForFace(vertFace, projFace_2, callback) {
         // TODO(vivek): clip bounding box to screen. 
-        var bbox = _boundingBox(face);
+        var bbox = _boundingBox(projFace_2);
 
         for (var x=bbox[DIM_X][0]; x<=bbox[DIM_X][1]; x+=(2/WIDTH)) {
             for (var y=bbox[DIM_Y][0]; y<=bbox[DIM_Y][1]; y+=(2/HEIGHT)) {
-                var bcScreen = barycentric(face, [x, y, 0]);
+                var bcScreen = _barycentric(projFace_2, [x, y]);
+                
+                var bcClip = [0, 0, 0];
+                bcClip[DIM_U] = bcScreen[DIM_U] / vertFace[0][DIM_W];
+                bcClip[DIM_V] = bcScreen[DIM_V] / vertFace[1][DIM_W];
+                bcClip[DIM_W] = bcScreen[DIM_W] / vertFace[2][DIM_W];
+
+                var bcClipNormalized = _divide(bcClip, bcClip[DIM_U] + bcClip[DIM_V] + bcClip[DIM_W]);
+
                 if (bcScreen[DIM_X]>=0 && bcScreen[DIM_Y]>=0 && bcScreen[DIM_Y]>=0) {
-                    callback(face, bcScreen, _vertexInterpolate(face, bcScreen), [x,y]);
+                    var vertInterp = _vertexInterpolate(vertFace, bcScreen);
+                    callback(vertFace, bcClipNormalized, vertInterp, [x,y]);
                 }
             }
         }
+    }
+
+    function _vec2(vec) {
+        return [vec[DIM_X], vec[DIM_Y]];
     }
 
     // mesh: array of faces
@@ -241,11 +256,14 @@ function CreateShaderPipeline(vertexShader, fragmentShader) {
         for (var i=0; i<mesh.length / 3; i++) {
             var va = vertexShader(mesh, 3 * i + 0, vertexUniforms);
             var vb = vertexShader(mesh, 3 * i + 1, vertexUniforms);
-            var vc = vertexShader(mesh, 3 * i + 2, vertexUniforms);            
+            var vc = vertexShader(mesh, 3 * i + 2, vertexUniforms);
 
-            var face = [va, vb, vc];
-            _iterateFragmentsForFace(face, function(face, bcScreen, interpolatedVertex, screenLocation) {
-                var color = fragmentShader(interpolatedVertex, bcScreen, screenLocation, fragmentUniforms);
+            vertFace = [va, vb, vc];
+            var projFace = vertFace.map(_projectedPoint);
+            var projFace_2 = projFace.map(_vec2);
+
+            _iterateFragmentsForFace(vertFace, projFace_2, function(face, bcClipNormalized, interpolatedVertex, screenLocation) {
+                var color = fragmentShader(interpolatedVertex, bcClipNormalized, screenLocation, fragmentUniforms);
                 if (color) {
                     drawPixel(ctx, screenLocation, color);
                 }
@@ -257,3 +275,51 @@ function CreateShaderPipeline(vertexShader, fragmentShader) {
         'render' : render
     }
 }
+
+// Camera
+
+function CreateCamera() {
+    var data = {};
+    data.position = [0, 0, -5];
+    data.target = [0, 0, 0];
+    data.up = [0, 1, 0];
+    data.pitch = 0;
+    data.yaw = Math.PI / 2.0;
+
+    function _method(obj, func) {
+        return func.bind(obj);
+    }
+
+    data.matrix = function() {
+        return Transform3DCamera(this.position, this.target, this.up);
+    }.bind(data);
+
+    data.front = _method(data, function() {
+        return _normalize(_subtract(this.target, this.position));
+    });
+
+    data.setFront = _method(data, function(front) {
+        this.target = _add(this.position, _normalize(front));
+    });
+
+    data.setYaw = _method(data, function(yaw){
+        this.yaw = yaw;
+        this.updateFrontWithAngles();
+    })
+
+    data.setPitch = _method(data, function(pitch){
+        this.pitch = pitch;
+        this.updateFrontWithAngles();
+    })
+
+    data.updateFrontWithAngles = _method(data, function(){
+        var front = [];
+        front[0] = Math.cos(this.yaw) * Math.cos(this.pitch);
+        front[1] = Math.sin(this.pitch)
+        front[2] = Math.sin(this.yaw) * Math.cos(this.pitch);
+        this.setFront(front);
+    })
+
+    return data;
+}
+

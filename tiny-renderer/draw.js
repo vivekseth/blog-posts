@@ -161,5 +161,37 @@ function drawPixel(ctx, pos, color) {
 }
 
 
+function CreateBuffer() {
+    var canvas = document.createElement('canvas');
+    canvas.width = WIDTH;
+    canvas.height = HEIGHT;
 
+    var ctx = offscreenCanvas.getContext('2d');
+
+    var pixelImageData = ctx.createImageData(1,1); // only do this once per page
+    var data = pixelImageData.data;
+
+    var invCenteringTransform = CGTransformConcat(CGTransformTranslate(-0.5, -0.5), CGTransformScale(1/WIDTH, 1/HEIGHT));
+
+    
+    function setPixel(pos, color) {
+        ctx.fillStyle = _color(color);
+        ctx.fillRect(pos[DIM_X], pos[DIM_Y], 2/WIDTH, 2/HEIGHT);
+    }
+
+    function setPixel2(pos, color) {
+        data[DIM_R] = color[DIM_R] * 255;
+        data[DIM_G] = color[DIM_G] * 255;
+        data[DIM_B] = color[DIM_B] * 255;
+        data[DIM_A] = color[DIM_A];
+        var canvasPos = _mutliplyMatrixVector(_matrixFromTransform(invCenteringTransform), [pos[DIM_X], pos[DIM_Y], 1]);
+        ctx.putImageData(pixelImageData, canvasPos[DIM_X], canvasPos[DIM_Y]);
+    }
+
+    return {
+        'setPixel' : setPixel,
+        'setPixel2' : setPixel2,
+        'getPixel' : null,
+    };
+}
 

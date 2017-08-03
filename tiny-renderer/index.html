@@ -1,4 +1,21 @@
 <canvas id='canvas'></canvas>
+<script type="text/javascript">
+var HEIGHT = 600;
+var WIDTH = 600;
+var body = document.body;
+body.style.backgroundColor = '#eee';
+var canvas = document.getElementById('canvas')
+canvas.style.position = 'absolute'
+canvas.style.top = '50%';
+canvas.style.left = '50%';
+canvas.style.marginTop = (-1 * HEIGHT / 2.0) + 'px'
+canvas.style.marginLeft = (-1 * WIDTH / 2.0) + 'px'
+canvas.style.height = HEIGHT;
+canvas.height = HEIGHT;
+canvas.style.width = WIDTH;
+canvas.width = WIDTH;
+canvas.style.backgroundColor = '#fff';
+</script>
 <script src="math.js"></script>
 <script src="util.js"></script>
 <script src="draw.js"></script>

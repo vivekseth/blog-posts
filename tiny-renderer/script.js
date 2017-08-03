@@ -1,20 +1,6 @@
-var body = document.body;
-body.style.backgroundColor = '#eee';
-
-var canvas = document.getElementById('canvas')
-canvas.style.position = 'absolute'
-canvas.style.top = '50%';
-canvas.style.left = '50%';
-canvas.style.marginTop = (-1 * HEIGHT / 2.0) + 'px'
-canvas.style.marginLeft = (-1 * WIDTH / 2.0) + 'px'
-canvas.style.height = HEIGHT;
-canvas.height = HEIGHT;
-canvas.style.width = WIDTH;
-canvas.width = WIDTH;
-canvas.style.backgroundColor = '#fff';
-
 var ctx = canvas.getContext("2d");
 var CenteringTransform = CGTransformConcat(CGTransformScale(WIDTH, HEIGHT), CGTransformTranslate(0.5, 0.5));
+
 var Camera = CreateCamera();
 var ActiveHandlers = {};
 
@@ -36,13 +22,17 @@ var cubes = (function(L, W, H){
 // Input Vertex: Anything
 // Output Vertex: vertex['position'] = 4d position coords
 function vertexShader(inputVertices, vindex, uniforms) { // -> Some interpolatable output vertex
+    var projectionFromCamera = uniforms['projectionFromCamera'];
+    var cameraFromWorld = uniforms['cameraFromWorld'];
+    var worldFromModel = uniforms['worldFromModel'];
+    var projectionFromModel = _matrixMultiply(_matrixMultiply(projectionFromCamera, cameraFromWorld), worldFromModel);
     var vertex = inputVertices[vindex];
-    var outputVertex = vertex;
+    var outputVertex =  _mutliplyMatrixVector(projectionFromModel, vertex);
     return outputVertex;
 }
 
 function fragmentShader(interpolatedVertex, bcScreen, screenLocation, uniforms) { // -> pixel color or null
-    return [bcScreen[DIM_U], bcScreen[DIM_V], bcScreen[DIM_W], 1];
+    return [interpolatedVertex[DIM_U] + 0.5, interpolatedVertex[DIM_V] + 0.5, interpolatedVertex[DIM_W], 1];
 }
 
 var pipeline = CreateShaderPipeline(vertexShader, fragmentShader);
@@ -62,14 +52,18 @@ function render(timestamp, duration) {
             var projectionFromModel = _matrixMultiply(_matrixMultiply(projectionFromCamera, cameraFromWorld), worldFromModel);
 
             pipeline.render(ctx, [
-                [-0.5, -0.5, 0],
-                [-0.5, 0.5, 0],
-                [0.5, 0.5, 0],
+                [-0.3, -0.3, 0, 1],
+                [-0.3, 0.3, 0, 1],
+                [0.3, 0.3, 0, 1],
 
-                [-0.5, -0.5, 0],
-                [0.5, -0.5, 0],
-                [0.5, 0.5, 0],
-            ], {}, {})
+                [-0.3, -0.3, 0, 1],
+                [0.3, -0.3, 0, 1],
+                [0.3, 0.3, 0, 1],
+            ], {
+                'projectionFromCamera' : projectionFromCamera,
+                'cameraFromWorld' : cameraFromWorld,
+                'worldFromModel' : worldFromModel,
+            }, {})
 
         ctx.restore();
     ctx.restore();
