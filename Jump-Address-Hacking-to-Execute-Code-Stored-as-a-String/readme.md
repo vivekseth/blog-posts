@@ -4,7 +4,7 @@ Operating systems typically give each process a virtual address space ranging fr
 
 Memory in `.DATA` is read/write, but cannot be executed. Similarly, memory in `.TEXT` is read/exec but cannot be written to. This security measure is called "W xor X" and prevents a malicious user from injecting *new* code into a running process. This does not prevent a malicious user from manipulating a program to run code that *already exists* when it shouldn't. 
 
-This program is a demonstration of using jump address hacking to execute code stored in the string constant `execString`. This works because GCC puts string constants in the `.TEXT` section, the executable part of memory.
+[This program](https://github.com/vivekseth/blog-posts/blob/master/Jump-Address-Hacking-to-Execute-Code-Stored-as-a-String/jump_overwrite.c) is a demonstration of using jump address hacking to execute code stored in the string constant `execString`. This works because GCC puts string constants in the `.TEXT` section, the executable part of memory.
 
 `execString` is approximately equivalent to the code below with modifications to avoid null bytes in the machine code.
 
