@@ -112,7 +112,7 @@ WS = [#x20#x09]
 
 This says that whitespace (`WS`) is defined as either a “space” or a “horizontal tab” and that fields can be surrounded by any amount of whitespace. 
 
-## Why Doesn’t a better CSV format exist? 
+## Why doesn’t a better CSV format exist? 
 
 Since these issues are so significant and so easy to fix, isn’t it strange that no one has proposed a new format that fixes these issues? 
 
