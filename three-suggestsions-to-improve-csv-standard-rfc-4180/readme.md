@@ -140,7 +140,7 @@ Although this grammar uses slightly different terms, it is effectively the same 
 
 Although some people treat RFC 4180 as if it is a standard, it is not a standard and has significant flaws that prevent it from becoming one. The format recommended by the W3C manages to fix these flaws using only minor changes to RFC 4180’s grammar. The resulting format is RFC 4180 compatible, and also fixes each of the issues I have identified in this post.
 
-For those of you writing software that will either read or write CSVs I would consider using the w3c CSV recommendation instead of RFC 4180.
+For anyone writing software that will either read or write CSVs I would suggest considering using the w3c CSV recommendation instead of that of RFC 4180. 
 
 ## References
 
