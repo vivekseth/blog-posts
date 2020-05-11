@@ -2,7 +2,7 @@
 
 ## Introduction 
 
-In [RFC 4180](https://tools.ietf.org/html/rfc4180) the IETF clearly states that the document “does not specify an Internet standard of any kind.” Even so, RFC 4180 feels like people consider it to be an internet standard. 
+In [RFC 4180](https://tools.ietf.org/html/rfc4180) the IETF clearly states that the document “does not specify an Internet standard of any kind.” Even so, it feels like people consider RFC 4180 to be an internet standard. 
 
 When you search for “CSV Standard” nearly all of the results on google are about RFC 4180. Wikipedia’s article on CSV [lists RFC 4180 as the “standard” for CSV](https://en.wikipedia.org/wiki/Comma-separated_values) (see the sidebar). On the US Government’s "The Sustainability of Digital Formats Web" [RFC 4180 is listed as the only format for CSVs](https://www.loc.gov/preservation/digital/formats/fdd/dataset_fdd.shtml). Even the IANA, the organization responsible for defining the meaning of MIME Types [lists RFC 4180 as the official reference for the type “text/csv”](https://www.iana.org/assignments/media-types/media-types.xhtml#table-text). Although RFC 4180 claims not to define a standard, it sure feels like people treat it like one. 
 
