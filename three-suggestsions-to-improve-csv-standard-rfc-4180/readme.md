@@ -8,7 +8,7 @@ When you search for “CSV Standard” nearly all of the results on google are a
 
 Given the popularity of the format, its unfortunate that it suffers from 3 major flaws which (in my opinion) make it unsuitable as a real standard for CSVs. Fortunately, each of these issues can be addressed with minor tweaks to the format and these tweaks have already been made in the CSV format recommended by the W3C. 
 
-The rest of the article assumes a very basic understanding of how formal grammars work (link). Even if you don’t understand how formal grammars work, I think most of this article will still make sense to you. If you would like to learn more about grammars, [here is a good guide](http://matt.might.net/articles/grammars-bnf-ebnf/).
+The rest of the article assumes a very basic understanding of how formal grammars work. Even if you don’t understand how formal grammars work, I think most of this article will still make sense to you. If you would like to learn more about grammars, [here is a good guide](http://matt.might.net/articles/grammars-bnf-ebnf/).
 
 ## RFC 4180 Grammar
 
