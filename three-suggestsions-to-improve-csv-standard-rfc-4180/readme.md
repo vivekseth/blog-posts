@@ -118,7 +118,7 @@ Since these issues are so significant and so easy to fix, isn’t it strange tha
 
 Actually, In December 2015 the W3C has recommended a new best practice format for CSVs that fixes each of the issues I have identified ([https://www.w3.org/TR/2015/REC-tabular-data-model-20151217/#ebnf](https://www.w3.org/TR/2015/REC-tabular-data-model-20151217/#ebnf)).
 
-Although the W3C’s format is significantly better than the IETF’s format, they don’t really discuss any of their reasons for making changes to the RFC 4180 format. The document just mentions that the new format is a “generalization of that defined in [RFC4180]”, and that it “is not compliant with text/csv as defined in [RFC4180] in that it permits line endings other than CRLF.” Basically, ther W3C has designed a CSV format that is compatible with RFC 4180, and fixes each of its major issues. 
+Although the W3C’s format is significantly better than the IETF’s format, they don’t really discuss any of their reasons for making changes to the RFC 4180 format. The document just mentions that the new format is a “generalization of that defined in [RFC4180]”, and that it “is not compliant with text/csv as defined in [RFC4180] in that it permits line endings other than CRLF.” Basically, the W3C has designed a CSV format that is compatible with RFC 4180, and fixes each of its major issues. 
 
 Here is the new grammar: 
 
